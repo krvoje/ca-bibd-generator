@@ -5,4 +5,4 @@ An old university project. Tries to generate a BIBD (http://mathworld.wolfram.co
 For instance to generate a Fano plane matrix:
 
     make
-    ./bibd 7 3 1
+    ./bibd 7 3 1 2
