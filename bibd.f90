@@ -9,15 +9,17 @@ program bibd
   real generateRandomNumber
 
   integer, dimension(:,:), allocatable:: incidences
-  integer vertices,k,blocks,lmbd,r,i,j
+  integer, dimension(:), allocatable:: sumInRow
+  integer, dimension(:), allocatable:: sumInCol
+  integer vertices,k,blocks,lmbd,r,i,j,optSteps,sumTotal
   real r_r,b_r
   character(100) f
 
   ! If the number of command line params is invalid, print instructions
-  if (command_argument_count() /= 3) then
+  if (command_argument_count() /= 4) then
      write (*,*) "Usage:"
      call get_command_argument(0,f)
-     write (*,*) f ,"v k λ"
+     write (*,*) f ,"v k λ optSteps"
      stop        
   else
      call get_command_argument(1,f)
@@ -26,6 +28,8 @@ program bibd
      read (f,"(I10)") k
      call get_command_argument(3,f)
      read (f,"(I10)") lmbd
+     call get_command_argument(3,f)
+     read (f,"(I10)") optSteps
   endif
 
   ! Test for neccessary BIBD conditions
@@ -42,13 +46,22 @@ program bibd
   endif
 
   allocate(incidences(1:vertices,1:blocks))
+  allocate(sumInRow(1:vertices))
+  allocate(sumInCol(1:blocks))
 
   call seedRandomGenerator()
   incidences(1:vertices,1:blocks)=int(generateRandomNumber())
+  sumInRow(1:vertices)=0
+  sumInCol(1:blocks)=0
 
   ! Check if the random generator generated correctly TODO: This is debug, remove
   do i=1,vertices
      do j=1,blocks
+        if(incidences(i,j)==1) then
+           sumInRow(i)=sumInRow(i)+1
+           sumInCol(j)=sumInCol(j)+1
+           sumTotal=sumTotal+1
+        endif
         if (incidences(i,j)/=1 .and. incidences(i,j)/=0) then
            print *, "Random generator error, the incidence matrix is:"
            print *, incidences(i,j)
@@ -57,33 +70,45 @@ program bibd
   enddo
 
   ! Rince and repeat until BIBD
-  do while(isBIBD(incidences,vertices,k,lmbd,blocks,r) .eqv. .false.)
-     call randomCA_BIBD(incidences,vertices,k,lmbd,blocks,r)
+  do while(isBIBD(incidences,vertices,k,lmbd,blocks,r,sumInRow,sumInCol) .eqv. .false.)
+     call randomCA_BIBD(incidences,vertices,k,lmbd,blocks,r,optSteps,sumTotal,sumInRow,sumInCol)
      print *, "An incidence matrix for the given parameters found:"
-     do i=1,vertices
-        do j=1,blocks
-           write (*,"(I1)",advance='no') incidences(i,j)
-        enddo
-        print *
-     enddo
+     call writeMatrix(incidences, vertices, blocks)
      stop
   enddo
 
   ! Memory cleanup
   deallocate(incidences)
+  deallocate(sumInRow)
+  deallocate(sumInCol)
 end program bibd
+
+subroutine writeMatrix(incidences, vertices, blocks)
+  integer vertices, blocks
+  integer incidences(1:vertices, 1:blocks)
+  
+  do i=1,vertices
+     do j=1,blocks
+        write (*,"(I1)",advance='no') incidences(i,j)
+     enddo
+     print *
+  enddo  
+end subroutine writeMatrix
 
 !!***
 !! Checks if the incidence matrix with the other parameters is a BIBD
 !! Returns .True. if this is a 2-(v,k,λ) BIBD
 !! .False. otherwise
-logical function isBIBD(incidences,v,k,lmbd,b,r)
+logical function isBIBD(incidences,v,k,lmbd,b,r,sumInRow,sumInCol)
   integer r,b,v,k,lmbd,i,j
   integer incidences(1:v,1:b)
+  integer sumInRow(1:v)
+  integer sumInCol(1:b)
 
   ! If the incidence matrix has a row with sum non-equal to r, this is not a BIBD
   do i=1,v
-     if (sum(incidences(i,:))/=r) then
+     !if (sum(incidences(i,:))/=r) then
+     if(sumInRow(i)/=r) then
         isBIBD=.False.
         return
      endif
@@ -91,7 +116,8 @@ logical function isBIBD(incidences,v,k,lmbd,b,r)
 
   ! If the incidence matrix has a row with sum non-equal to k, this is not a BIBD
   do i=1,b
-     if (sum(incidences(:,i))/=k) then
+     !if (sum(incidences(:,i))/=k) then
+     if(sumInCol(i)/=r) then
         isBIBD=.False.
         return
      endif
@@ -114,84 +140,73 @@ logical function isBIBD(incidences,v,k,lmbd,b,r)
   return
 end function isBIBD
 
-subroutine randomCA_BIBD(incidences,v,k,lmbd,b,r)        
+subroutine randomCA_BIBD(incidences,v,k,lmbd,b,r,optSteps,sumTotal,sumInRow,sumInCol)
   use mtmod
 
   implicit none
 
   ! Sum of all incidences, computed while running
-  integer sum_total, sum_rows, sum_cols
-  integer cell_liveness_factor ! Whether the cell will come alive, or stay dormant
+  integer sumTotal, rowSum, colSum
+  integer vitality ! Whether the cell will come alive, or stay dormant
   integer r,b,v,k,lmbd,i,j,point
   integer incidences(1:v,1:b)
+  integer sumInRow(1:v)
+  integer sumInCol(1:b)  
   integer opt_row, opt_col
-  logical theEnd, isBIBD, oneOpt, twoOpt, isIn
+  integer optSteps
+  logical theEnd, isBIBD, isIn, nOpt
 
   real generateRandomNumber
 
   integer opt_count
 
   theEnd=.false.
-  sum_total=0
-  cell_liveness_factor=0
+  sumTotal=0
+  vitality=0
 
   opt_count=0
-
-  do i=1,v
-     sum_total = sum_total + sum(incidences(i,:))
-  enddo
 
   i=int(generateRandomNumber()*(v-1))+1
   j=int(generateRandomNumber()*(b-1))+1
 
   do while(theEnd.eqv..false.)
-     ! If it makes sence to try a 2-opt
-     if (abs(sum_total-v*r)==2) then
-        opt_count=opt_count+v*b
-        if (twoOpt(incidences,v,k,lmbd,b,r,sum_total) .eqv. .true.) then
-           theEnd=.true.
-           print *, "Total count of 2-opt steps:", opt_count
-           return
-        endif
+     if (nOpt(optSteps, incidences,v,k,lmbd,b,r,sumTotal,sumInRow,sumInCol) .eqv. .true.) then
+        theEnd=.true.
+        print *, "Total count of opt steps:", opt_count
+        return
      endif
 
-     ! If it makes sence to try a 1-opt
-     if (abs(sum_total-v*r)==1) then  !ako opće ima smisla raditi 1-opt korak
-        opt_count=opt_count+1
-        if (oneOpt(incidences,v,k,lmbd,b,r,sum_total).eqv..true.) then
-           theEnd=.true.
-           print *, "Total count of 1-opt steps:", opt_count
-           return
-        endif
-     endif
-
-     cell_liveness_factor=0
+     vitality=0
 
      i=int(generateRandomNumber()*(v))+1
      j=int(generateRandomNumber()*(b))+1
-     sum_cols=sum(incidences(:,j))
-     sum_rows=sum(incidences(i,:))
+     !colSum=sum(incidences(:,j))
+     !rowSum=sum(incidences(i,:))
+     colSum=sumInCol(j)
+     rowSum=sumInRow(i)
 
-     ! If the cell is dormant
      if (incidences(i,j)==0) then
         do point=1,v
            if (point==i) cycle
-           if (dot_product(incidences(i,:),incidences(point,:))<lmbd) cell_liveness_factor=cell_liveness_factor+1 ! Najviše v-1
+           if (dot_product(incidences(i,:),incidences(point,:))<lmbd) vitality=vitality+1 ! At most v-1           
         enddo
-        if (sum_total<v*r) cell_liveness_factor=cell_liveness_factor+1 ! Najviše 1
-        if (sum_cols<k) cell_liveness_factor=cell_liveness_factor+(k-sum_cols) ! Najviše k
-        if (sum_rows<r) cell_liveness_factor=cell_liveness_factor+(r-sum_rows) ! Najviše r
-        if(int(generateRandomNumber()*(v+k-1+r-1))<cell_liveness_factor) call flip(incidences(i,j),sum_total)
-        ! If the cell is active
+        if (sumTotal<v*r) vitality=vitality+1 ! At most 1
+        if (colSum<k) vitality=vitality+(k-colSum) ! At most k
+        if (rowSum<r) vitality=vitality+(r-rowSum) ! At most r
+        if(int(generateRandomNumber()*(v+k-1+r-1))<vitality) then
+           call flip(i,j,incidences,v,b,sumTotal,sumInRow,sumInCol)
+        endif
      else if (incidences(i,j)==1) then
         do point=1,v
            if (point==i) cycle
-           if (dot_product(incidences(i,:),incidences(point,:))>lmbd) cell_liveness_factor=cell_liveness_factor+1 ! Najviše v-1
+           if (dot_product(incidences(i,:),incidences(point,:))>lmbd) vitality=vitality+1 ! Najviše v-1
         enddo
-        if (sum_total>v*r) cell_liveness_factor=cell_liveness_factor+1 ! Najviše 1
-        if (sum_cols>k) cell_liveness_factor=cell_liveness_factor+(sum_cols-k) ! Najviše v-k+1?
-        if (sum_rows>r) cell_liveness_factor=cell_liveness_factor+(sum_rows-r) ! Najviše b-r+1?
-        if(int(generateRandomNumber()*(v+v-k+1+b-r+1))<cell_liveness_factor) call flip(incidences(i,j),sum_total)! Eksperimenti, dat prednost živim incidencijama
+        if (sumTotal>v*r) vitality=vitality+1 ! Najviše 1
+        if (colSum>k) vitality=vitality+(colSum-k) ! Najviše v-k+1?
+        if (rowSum>r) vitality=vitality+(rowSum-r) ! Najviše b-r+1?
+        if(int(generateRandomNumber()*(v+v-k+1+b-r+1))<vitality) then
+           call flip(i,j,incidences,v,b,sumTotal,sumInRow,sumInCol)
+        endif        
      endif
   enddo
 end subroutine randomCA_BIBD
@@ -218,78 +233,74 @@ real function generateRandomNumber()
 
 end function generateRandomNumber
 
-logical function oneOpt(incidences,v,k,lmbd,b,r,sum_total)
+recursive logical function nOpt(n,incidences,v,k,lmbd,b,r,sumTotal,sumInRow,sumInCol) result (successfulOpt)
   implicit none
 
-  integer v,k,lmbd,b,r,sum_total,i,j
+  integer n
   integer incidences(1:v,1:b)
-
+  integer sumInRow(1:v)
+  integer sumInCol(1:b)
+  integer v,k,lmbd,b,r,sumTotal,i,j
   logical isBIBD
 
-  oneOpt=.false.
-  !print *, "Starting 1-opt..."
+  successfulOpt=.false.
+  if(n<1) then
+     successfulOpt=.false.
+     return
+  else if (abs(sumTotal-v*r)/=n) then
+     successfulOpt = nOpt(n-1,incidences,v,k,lmbd,b,r,sumTotal,sumInRow,sumInCol)
+     return
+  endif
+
   do i=1,v
      do j=1,b
-        if(&
-             (incidences(i,j)==0 .and. sum_total==v*r-1 .and. sum(incidences(i,:))==r-1 .and. sum(incidences(:,j))==k-1 )&
+        if(& ! If it makes sence to do an n-opt step
+             !(incidences(i,j)==0 .and. sumTotal==v*r-n .and. (sum(incidences(i,:))==r-n .or. sum(incidences(:,j))==k-n) )&
+             (incidences(i,j)==0 .and. sumTotal==v*r-n .and. (sumInRow(i)==r-n .or. sumInCol(j)==k-n) )&
              .or.&
-             (incidences(i,j)==1 .and. sum_total==v*r+1 .and. sum(incidences(i,:))==r+1 .and. sum(incidences(:,j))==k+1) ) then
-           call flip(incidences(i,j),sum_total)
-           if (isBIBD(incidences,v,k,lmbd,b,r).eqv..True.) then
-              !write (*,*) "1-opt yielded a BIBD"
-              oneOpt=.true.
-              return
-           else
-              !write (*,*) "1-opt yielded no BIBD"
-              call flip(incidences(i,j),sum_total)
-              oneOpt=.false.
-           endif
-        endif
-     enddo
-  enddo
-  return
-end function oneOpt
-
-
-logical function twoOpt(incidences,v,k,lmbd,b,r,sum_total)
-  implicit none
-
-  integer v,k,lmbd,b,r,sum_total,i,j
-  integer incidences(1:v,1:b)
-  logical isBIBD, oneOpt
-
-  twoOpt=.false.
-  !print *, "2-opt!"
-  do i=1,v
-     do j=1,b
-        if(&
-             (incidences(i,j)==0 .and. sum_total==v*r-2 .and. (sum(incidences(i,:))==r-2 .or. sum(incidences(:,j))==k-2) )&
-             .or.&
-             (incidences(i,j)==1 .and. sum_total==v*r+2 .and. (sum(incidences(i,:))==r+2 .or. sum(incidences(:,j))==k+2) )&
+             !(incidences(i,j)==1 .and. sumTotal==v*r+n .and. (sum(incidences(i,:))==r+n .or. sum(incidences(:,j))==k+n) )&
+             (incidences(i,j)==1 .and. sumTotal==v*r+n .and. (sumInRow(i)==r+n .or. sumInCol(j)==k+n) )&
              ) then
-           call flip(incidences(i,j),sum_total)
-           if (abs(sum_total-v*r)==1) then  !ako sada ima smisla raditi 1-opt korak
-              if(oneOpt(incidences,v,k,lmbd,b,r,sum_total).eqv..true.) then
-                 print *, "2-opt yielded a BIBD"
-                 twoOpt=.true.
+           call flip(i,j,incidences,v,b,sumTotal,sumInRow,sumInCol)
+           if(n == 1) then
+              if (isBIBD(incidences,v,k,lmbd,b,r,sumInRow,sumInCol).eqv..True.) then
+                 print *, n, "-opt yielded a BIBD"
+                 successfulOpt=.true.
+                 return
+              endif
+           else if (abs(sumTotal-v*r)==n - 1) then
+              if(nOpt(n-1,incidences,v,k,lmbd,b,r,sumTotal,sumInRow,sumInCol)) then
+                 print *, "n-opt yielded a BIBD"
+                 successfulOpt=.true.
                  return
               endif
            else
-              call flip(incidences(i,j),sum_total)
-              twoOpt=.false.
+              call flip(i,j,incidences,v,b,sumTotal,sumInRow,sumInCol)
+              successfulOpt=.false.
            endif
         endif
      enddo
   enddo
   return
-end function twoOpt
+end function nOpt
 
 ! Flips a CA's cell value, and updates the sum
-subroutine flip (cell, sum_total)
-  integer cell,sum_total
+subroutine flip (i,j,incidences,v,b,sumTotal,sumInRow,sumInCol)
+  integer sumTotal, v, b, i, j
+  integer incidences(1:v,1:b)
+  integer sumInRow(1:v)
+  integer sumInCol(1:b)
 
-  cell=abs(cell-1)
-  if (cell==0) sum_total=sum_total-1
-  if (cell==1) sum_total=sum_total+1
+  incidences(i,j)=abs(incidences(i,j)-1)
+  if (incidences(i,j)==0) then
+     sumTotal=sumTotal-1
+     sumInRow(i)=sumInRow(i)-1
+     sumInCol(j)=sumInCol(j)-1
+  endif
+  if (incidences(i,j)==1) then
+     sumTotal=sumTotal+1
+     sumInRow(i)=sumInRow(i)+1
+     sumInCol(j)=sumInCol(j)+1
+  endif
 
 end subroutine flip
