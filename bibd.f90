@@ -148,14 +148,14 @@ subroutine randomCA_BIBD(incidences,v,k,lmbd,b,r,optSteps,sumTotal,sumInRow,sumI
 
   ! Sum of all incidences, computed while running
   integer sumTotal, rowSum, colSum
-  integer vitality ! Whether the cell will come alive, or stay dormant
+  integer changeFactor ! Whether the cell will come alive, or stay dormant
   integer r,b,v,k,lmbd,i,j,point
   integer incidences(1:v,1:b)
   integer sumInRow(1:v)
   integer sumInCol(1:b)  
   integer opt_row, opt_col
   integer optSteps
-  integer distanceTilGoal, nothing
+  integer distanceTilGoal, nothing, dot_prod
   logical theEnd, isBIBD, isIn, nOpt
 
   real generateRandomNumber
@@ -164,7 +164,7 @@ subroutine randomCA_BIBD(incidences,v,k,lmbd,b,r,optSteps,sumTotal,sumInRow,sumI
   !write (*,*) "DEBUG: randomCA_BIBD"
   theEnd=.false.
   sumTotal=0
-  vitality=0
+  changeFactor=0
 
   opt_count=0
 
@@ -178,7 +178,11 @@ subroutine randomCA_BIBD(incidences,v,k,lmbd,b,r,optSteps,sumTotal,sumInRow,sumI
         return
      endif
 
-     vitality=0
+     !if(nothing>100) then
+     !   print *, "Oh deer: ", nothing
+     !endif
+     
+     changeFactor=0
 
      i=int(generateRandomNumber()*(v))+1
      j=int(generateRandomNumber()*(b))+1
@@ -188,34 +192,34 @@ subroutine randomCA_BIBD(incidences,v,k,lmbd,b,r,optSteps,sumTotal,sumInRow,sumI
      if (incidences(i,j)==0) then
         do point=1,v
            if (point==i) cycle
-           if (dot_product(incidences(i,:),incidences(point,:))<lmbd) vitality=vitality+1 ! At most v-1           
+           dot_prod=dot_product(incidences(i,:),incidences(point,:))
+           if (dot_prod<lmbd) changeFactor=changeFactor+1 ! At most v-1           
         enddo
-        if (sumTotal<v*r) vitality=vitality+1 ! At most 1
-        if (colSum<k) vitality=vitality+(k-colSum) ! At most k
-        if (rowSum<r) vitality=vitality+(r-rowSum) ! At most r
-        if(int(generateRandomNumber()*(v+k-1+r-1))<vitality) then
+        if (sumTotal<v*r) changeFactor=changeFactor+(v*r-sumTotal)
+        if (colSum<k) changeFactor=changeFactor+(k-colSum) ! At most k
+        if (rowSum<r) changeFactor=changeFactor+(r-rowSum) ! At most r
+        if(int(generateRandomNumber()*(v+k-1+r-1))<changeFactor) then
            call flip(i,j,incidences,v,b,sumTotal,sumInRow,sumInCol)
+           !if(nothing/=0) print *, "Inactive for", nothing, "iterations"
            nothing=0
         else
            nothing=nothing+1
-           !if(nothing>optSteps)
-           !print *, "nothing done, vitality: ", nothing, vitality
         endif
      else if (incidences(i,j)==1) then
         do point=1,v
            if (point==i) cycle
-           if (dot_product(incidences(i,:),incidences(point,:))>lmbd) vitality=vitality+1 ! Najviše v-1
+           dot_prod=dot_product(incidences(i,:),incidences(point,:))
+           if (dot_prod>lmbd) changeFactor=changeFactor+1 ! Najviše v-1
         enddo
-        if (sumTotal>v*r) vitality=vitality+1 ! Najviše 1
-        if (colSum>k) vitality=vitality+(colSum-k) ! Najviše v-k+1?
-        if (rowSum>r) vitality=vitality+(rowSum-r) ! Najviše b-r+1?
-        if(int(generateRandomNumber()*(v+v-k+1+b-r+1))<vitality) then
+        if (sumTotal>v*r) changeFactor=changeFactor+(sumTotal-v*r)
+        if (colSum>k) changeFactor=changeFactor+(colSum-k) ! Najviše v-k+1?
+        if (rowSum>r) changeFactor=changeFactor+(rowSum-r) ! Najviše b-r+1?
+        if(int(generateRandomNumber()*(v-k+1+b-r+1))<changeFactor) then
            call flip(i,j,incidences,v,b,sumTotal,sumInRow,sumInCol)
+           !if(nothing/=0) print *, "Inactive for", nothing, "iterations"
            nothing=0
         else
-           nothing=nothing+1
-           !if(nothing>optSteps)
-           !print *, "nothing done, vitality: ", nothing, vitality
+           nothing=nothing+1           
         endif
      else
         print *, "Severe fatal error"
@@ -239,10 +243,15 @@ real function generateRandomNumber()
 
   double precision ZBQLU01,ZBQLUAB, ZBQLEXP
   integer i
+
+  !call seedRandomGenerator()
+
   !!write (*,*) "DEBUG: generateRandomNumber"
-  !generateRandomNumber=ZBQLU01(i)
-  !generateRandomNumber=grnd() !<- Ova implementacija Mersenne twistera je koma za ovu svrhu
-  generateRandomNumber=rand()
+  if(ZBQLU01(i)*2>1) then
+     generateRandomNumber=grnd() !<- Ova implementacija Mersenne twistera je koma za ovu svrhu
+  else
+     generateRandomNumber=rand()
+  endif
   if (generateRandomNumber==1) generateRandomNumber=0 ! Računamo da se nikad ne dobije 1, jer bi to potrgalo sve
   return
 
