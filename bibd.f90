@@ -28,7 +28,7 @@ program bibd
      read (f,"(I10)") k
      call get_command_argument(3,f)
      read (f,"(I10)") lmbd
-     call get_command_argument(3,f)
+     call get_command_argument(4,f)
      read (f,"(I10)") optSteps
   endif
 
@@ -70,7 +70,7 @@ program bibd
   enddo
 
   ! Rince and repeat until BIBD
-  do while(isBIBD(incidences,vertices,k,lmbd,blocks,r,sumInRow,sumInCol) .eqv. .false.)
+  do while(isBIBD(incidences,vertices,k,lmbd,blocks,r,sumInRow,sumInCol) .eqv. .false.)     
      call randomCA_BIBD(incidences,vertices,k,lmbd,blocks,r,optSteps,sumTotal,sumInRow,sumInCol)
      print *, "An incidence matrix for the given parameters found:"
      call writeMatrix(incidences, vertices, blocks)
@@ -83,12 +83,12 @@ program bibd
   deallocate(sumInCol)
 end program bibd
 
-subroutine writeMatrix(incidences, vertices, blocks)
-  integer vertices, blocks
-  integer incidences(1:vertices, 1:blocks)
-  
-  do i=1,vertices
-     do j=1,blocks
+subroutine writeMatrix(incidences, v, b)
+  integer v, b
+  integer incidences(1:v, 1:b)
+  write (*,*) "writeMatrix"
+  do i=1,v
+     do j=1,b
         write (*,"(I1)",advance='no') incidences(i,j)
      enddo
      print *
@@ -100,14 +100,16 @@ end subroutine writeMatrix
 !! Returns .True. if this is a 2-(v,k,λ) BIBD
 !! .False. otherwise
 logical function isBIBD(incidences,v,k,lmbd,b,r,sumInRow,sumInCol)
+
   integer r,b,v,k,lmbd,i,j
   integer incidences(1:v,1:b)
   integer sumInRow(1:v)
   integer sumInCol(1:b)
-
+  !write (*,*) "DEBUG: isBIBD"
+ !  call writeMatrix(incidences,v,k)
+   
   ! If the incidence matrix has a row with sum non-equal to r, this is not a BIBD
   do i=1,v
-     !if (sum(incidences(i,:))/=r) then
      if(sumInRow(i)/=r) then
         isBIBD=.False.
         return
@@ -116,7 +118,6 @@ logical function isBIBD(incidences,v,k,lmbd,b,r,sumInRow,sumInCol)
 
   ! If the incidence matrix has a row with sum non-equal to k, this is not a BIBD
   do i=1,b
-     !if (sum(incidences(:,i))/=k) then
      if(sumInCol(i)/=r) then
         isBIBD=.False.
         return
@@ -154,22 +155,23 @@ subroutine randomCA_BIBD(incidences,v,k,lmbd,b,r,optSteps,sumTotal,sumInRow,sumI
   integer sumInCol(1:b)  
   integer opt_row, opt_col
   integer optSteps
+  integer distanceTilGoal, nothing
   logical theEnd, isBIBD, isIn, nOpt
 
   real generateRandomNumber
 
   integer opt_count
-
+  !write (*,*) "DEBUG: randomCA_BIBD"
   theEnd=.false.
   sumTotal=0
   vitality=0
 
   opt_count=0
 
-  i=int(generateRandomNumber()*(v-1))+1
-  j=int(generateRandomNumber()*(b-1))+1
+  nothing=0
 
   do while(theEnd.eqv..false.)
+     !call writeMatrix(incidences,v,b)
      if (nOpt(optSteps, incidences,v,k,lmbd,b,r,sumTotal,sumInRow,sumInCol) .eqv. .true.) then
         theEnd=.true.
         print *, "Total count of opt steps:", opt_count
@@ -180,8 +182,6 @@ subroutine randomCA_BIBD(incidences,v,k,lmbd,b,r,optSteps,sumTotal,sumInRow,sumI
 
      i=int(generateRandomNumber()*(v))+1
      j=int(generateRandomNumber()*(b))+1
-     !colSum=sum(incidences(:,j))
-     !rowSum=sum(incidences(i,:))
      colSum=sumInCol(j)
      rowSum=sumInRow(i)
 
@@ -195,6 +195,11 @@ subroutine randomCA_BIBD(incidences,v,k,lmbd,b,r,optSteps,sumTotal,sumInRow,sumI
         if (rowSum<r) vitality=vitality+(r-rowSum) ! At most r
         if(int(generateRandomNumber()*(v+k-1+r-1))<vitality) then
            call flip(i,j,incidences,v,b,sumTotal,sumInRow,sumInCol)
+           nothing=0
+        else
+           nothing=nothing+1
+           !if(nothing>optSteps)
+           !print *, "nothing done, vitality: ", nothing, vitality
         endif
      else if (incidences(i,j)==1) then
         do point=1,v
@@ -206,8 +211,16 @@ subroutine randomCA_BIBD(incidences,v,k,lmbd,b,r,optSteps,sumTotal,sumInRow,sumI
         if (rowSum>r) vitality=vitality+(rowSum-r) ! Najviše b-r+1?
         if(int(generateRandomNumber()*(v+v-k+1+b-r+1))<vitality) then
            call flip(i,j,incidences,v,b,sumTotal,sumInRow,sumInCol)
-        endif        
-     endif
+           nothing=0
+        else
+           nothing=nothing+1
+           !if(nothing>optSteps)
+           !print *, "nothing done, vitality: ", nothing, vitality
+        endif
+     else
+        print *, "Severe fatal error"
+        call exit(1)
+     endif     
   enddo
 end subroutine randomCA_BIBD
 
@@ -215,9 +228,10 @@ subroutine seedRandomGenerator()
   use mtmod
 
   external ZBQLINI
-
+  !!write (*,*) "DEBUG: seedRandomGenerator"
   call ZBQLINI(time())
   call sgrnd(time())
+  call srand(time())
 end subroutine seedRandomGenerator
 
 real function generateRandomNumber()
@@ -225,9 +239,10 @@ real function generateRandomNumber()
 
   double precision ZBQLU01,ZBQLUAB, ZBQLEXP
   integer i
-
+  !!write (*,*) "DEBUG: generateRandomNumber"
   !generateRandomNumber=ZBQLU01(i)
-  generateRandomNumber=grnd() !<- Ova implementacija Mersenne twistera je koma za ovu svrhu
+  !generateRandomNumber=grnd() !<- Ova implementacija Mersenne twistera je koma za ovu svrhu
+  generateRandomNumber=rand()
   if (generateRandomNumber==1) generateRandomNumber=0 ! Računamo da se nikad ne dobije 1, jer bi to potrgalo sve
   return
 
@@ -248,39 +263,48 @@ recursive logical function nOpt(n,incidences,v,k,lmbd,b,r,sumTotal,sumInRow,sumI
      successfulOpt=.false.
      return
   else if (abs(sumTotal-v*r)/=n) then
-     successfulOpt = nOpt(n-1,incidences,v,k,lmbd,b,r,sumTotal,sumInRow,sumInCol)
-     return
+     if(n==1) then
+        successfulOpt=.false.
+        return
+     else
+        successfulOpt = nOpt(n-1,incidences,v,k,lmbd,b,r,sumTotal,sumInRow,sumInCol)
+        return
+     endif
   endif
 
+  !call writeMatrix(incidences,v,b)
+  
   do i=1,v
      do j=1,b
         if(& ! If it makes sence to do an n-opt step
-             !(incidences(i,j)==0 .and. sumTotal==v*r-n .and. (sum(incidences(i,:))==r-n .or. sum(incidences(:,j))==k-n) )&
              (incidences(i,j)==0 .and. sumTotal==v*r-n .and. (sumInRow(i)==r-n .or. sumInCol(j)==k-n) )&
              .or.&
-             !(incidences(i,j)==1 .and. sumTotal==v*r+n .and. (sum(incidences(i,:))==r+n .or. sum(incidences(:,j))==k+n) )&
              (incidences(i,j)==1 .and. sumTotal==v*r+n .and. (sumInRow(i)==r+n .or. sumInCol(j)==k+n) )&
              ) then
            call flip(i,j,incidences,v,b,sumTotal,sumInRow,sumInCol)
            if(n == 1) then
               if (isBIBD(incidences,v,k,lmbd,b,r,sumInRow,sumInCol).eqv..True.) then
-                 print *, n, "-opt yielded a BIBD"
+                 !print *, n, "-opt yielded a BIBD"
                  successfulOpt=.true.
                  return
               endif
            else if (abs(sumTotal-v*r)==n - 1) then
+              !write (*,*) "DEBUG: Calling n-1 opt", n
               if(nOpt(n-1,incidences,v,k,lmbd,b,r,sumTotal,sumInRow,sumInCol)) then
-                 print *, "n-opt yielded a BIBD"
+                 print *, n, "-opt yielded a BIBD"
                  successfulOpt=.true.
                  return
               endif
            else
               call flip(i,j,incidences,v,b,sumTotal,sumInRow,sumInCol)
+              print *, n, "-opt fail"
               successfulOpt=.false.
+              return
            endif
         endif
      enddo
   enddo
+  !write (*,*) "DEBUG: end of nOpt", n
   return
 end function nOpt
 
@@ -290,7 +314,7 @@ subroutine flip (i,j,incidences,v,b,sumTotal,sumInRow,sumInCol)
   integer incidences(1:v,1:b)
   integer sumInRow(1:v)
   integer sumInCol(1:b)
-
+  !!write (*,*) "DEBUG: flip"
   incidences(i,j)=abs(incidences(i,j)-1)
   if (incidences(i,j)==0) then
      sumTotal=sumTotal-1
@@ -302,5 +326,4 @@ subroutine flip (i,j,incidences,v,b,sumTotal,sumInRow,sumInCol)
      sumInRow(i)=sumInRow(i)+1
      sumInCol(j)=sumInCol(j)+1
   endif
-
 end subroutine flip
