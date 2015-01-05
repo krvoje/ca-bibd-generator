@@ -57,6 +57,7 @@ program bibd
   ! Check if the random generator generated correctly TODO: This is debug, remove
   do i=1,vertices
      do j=1,blocks
+        incidences(i,j)=int(generateRandomNumber())
         if(incidences(i,j)==1) then
            sumInRow(i)=sumInRow(i)+1
            sumInCol(j)=sumInCol(j)+1
@@ -247,10 +248,11 @@ real function generateRandomNumber()
   !call seedRandomGenerator()
 
   !!write (*,*) "DEBUG: generateRandomNumber"
-  if(ZBQLU01(i)*2>1) then
+  if(modulo(time(),2) == 0) then
      generateRandomNumber=grnd() !<- Ova implementacija Mersenne twistera je koma za ovu svrhu
   else
-     generateRandomNumber=rand()
+     generateRandomNumber=ZBQLU01(i)
+     !generateRandomNumber=rand()
   endif
   if (generateRandomNumber==1) generateRandomNumber=0 ! Računamo da se nikad ne dobije 1, jer bi to potrgalo sve
   return
