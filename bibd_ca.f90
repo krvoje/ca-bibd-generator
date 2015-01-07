@@ -1,12 +1,11 @@
 ! A cellular automaton that tries to generate a BIBD
 ! for the given parameters  
-program bibd
+program bibd_ca
 
   use incidence_structure
   
   implicit none
   
-  logical isBIBD
   real generateRandomNumber
 
   type(IncidenceStructure) incs
@@ -59,7 +58,7 @@ program bibd
   do i=1,incs%v
      do j=1,incs%b
         incs%incidences(i,j)=int(generateRandomNumber())
-        if(incs%incidences(i,j)==1) then
+        if(active(incs,i,j)) then
            incs%sumInRow(i)=incs%sumInRow(i)+1
            incs%sumInCol(j)=incs%sumInCol(j)+1
            incs%sumTotal=incs%sumTotal+1
@@ -90,7 +89,7 @@ program bibd
   deallocate(incs%dp)
   deallocate(incs%sumInRow)
   deallocate(incs%sumInCol)
-end program bibd
+end program bibd_ca
 
 subroutine writeMatrix(incs)
   use incidence_structure
@@ -106,53 +105,6 @@ subroutine writeMatrix(incs)
   enddo
 end subroutine writeMatrix
 
-!!***
-!! Checks if the incidence matrix with the other parameters is a BIBD
-!! Returns .True. if this is a 2-(v,k,λ) BIBD
-!! .False. otherwise
-logical function isBIBD(incs)
-
-  use incidence_structure
-  type(IncidenceStructure) incs
-  
-  integer i,j
-
-  !write (*,*) "DEBUG: isBIBD"
-  !  call writeMatrix(incs%incidences,v,k)
-
-  ! If the incidence matrix has a row with sum non-equal to r, this is not a BIBD
-  do i=1,incs%v
-     if(incs%sumInRow(i)/=incs%r) then
-        isBIBD=.False.
-        return
-     endif
-  enddo
-
-  ! If the incidence matrix has a row with sum non-equal to k, this is not a BIBD
-  do i=1,incs%b
-     if(incs%sumInCol(i)/=incs%r) then
-        isBIBD=.False.
-        return
-     endif
-  enddo
-
-  ! If there are two incs%b (rows) whose intersection does not contain lambda incs%v,
-  ! this is not a BIBD
-  do i=1,(incs%v-1)
-     do j=(i+1),incs%v
-        if (incs%dp(i,j)/=incs%lmbd) then
-           isBIBD=.False.
-           return
-        endif
-     enddo
-  end do
-
-  ! Otherwise, we got a BIBD
-  isBIBD=.True.
-  write (*,*) "Is a BIBD!"
-  return
-end function isBIBD
-
 subroutine randomCA_BIBD(incs, optSteps)
   use mtmod
   use incidence_structure
@@ -162,12 +114,12 @@ subroutine randomCA_BIBD(incs, optSteps)
   type(IncidenceStructure) incs
 
   integer rowSum, colSum
-  integer changeFactor ! Whether the cell will come alive, or stay dormant
+  integer changeFactor ! Whether the cell will come dormant, or stay dormant
   integer i,j,point
   integer opt_row, opt_col
   integer optSteps
   integer distanceTilGoal, nothing, dot_prod
-  logical theEnd, isBIBD, isIn, nOpt
+  logical theEnd, isIn, nOpt
 
   real generateRandomNumber
 
@@ -200,7 +152,7 @@ subroutine randomCA_BIBD(incs, optSteps)
      colSum=incs%sumInCol(j)
      rowSum=incs%sumInRow(i)
 
-     if (incs%incidences(i,j)==0) then
+     if (dormant(incs,i,j)) then
         do point=1,incs%v
            if (point==i) cycle
            dot_prod=incs%dp(i,point)
@@ -210,13 +162,13 @@ subroutine randomCA_BIBD(incs, optSteps)
         if (colSum<incs%k) changeFactor=changeFactor+(incs%k-colSum) ! At most k
         if (rowSum<incs%r) changeFactor=changeFactor+(incs%r-rowSum) ! At most r
         if(int(generateRandomNumber()*(incs%v+incs%k-1+incs%r-1))<changeFactor) then
-           call flip(i,j,incs)
+           call flip(incs,i,j)
            !if(nothing/=0) print *, "Inactive for", nothing, "iterations"
            nothing=0
         else
            nothing=nothing+1
         endif
-     else if (incs%incidences(i,j)==1) then
+     else if (active(incs,i,j)) then
         do point=1,incs%v
            if (point==i) cycle
            dot_prod=incs%dp(i,point)
@@ -226,7 +178,7 @@ subroutine randomCA_BIBD(incs, optSteps)
         if (colSum>incs%k) changeFactor=changeFactor+(colSum-incs%k) ! Najviše v-k+1?
         if (rowSum>incs%r) changeFactor=changeFactor+(rowSum-incs%r) ! Najviše b-r+1?
         if(int(generateRandomNumber()*(incs%v-incs%k+1+incs%b-incs%r+1))<changeFactor) then
-           call flip(i,j,incs)
+           call flip(incs,i,j)
            !if(nothing/=0) print *, "Inactive for", nothing, "iterations"
            nothing=0
         else
@@ -275,7 +227,6 @@ recursive logical function nOpt(n,incs) result (successfulOpt)
 
   type(IncidenceStructure) incs
   integer n,i,j
-  logical isBIBD
 
   successfulOpt=.false.
   if(n<1) then
@@ -296,16 +247,16 @@ recursive logical function nOpt(n,incs) result (successfulOpt)
   do i=1,incs%v
      do j=1,incs%b
         if(& ! If it makes sence to do an n-opt step
-             (incs%incidences(i,j)==0 &
+             (dormant(incs,i,j) &
              .and. incs%sumTotal==incs%v*incs%r-n &
              .and. (incs%sumInRow(i)==incs%r-n .or. incs%sumInCol(j)==incs%k-n) &
              )&
              .or.&
-             (incs%incidences(i,j)==1 &
+             (active(incs,i,j) &
              .and. incs%sumTotal==incs%v*incs%r+n &
              .and. (incs%sumInRow(i)==incs%r+n .or. incs%sumInCol(j)==incs%k+n))&
              ) then
-           call flip(i,j,incs)
+           call flip(incs,i,j)
            if(n == 1) then
               if (isBIBD(incs).eqv..True.) then
                  !print *, n, "-opt yielded a BIBD"
@@ -320,7 +271,7 @@ recursive logical function nOpt(n,incs) result (successfulOpt)
                  return
               endif
            else
-              call flip(i,j,incs)
+              call flip(incs,i,j)
               print *, n, "-opt fail"
               successfulOpt=.false.
               return
@@ -331,39 +282,3 @@ recursive logical function nOpt(n,incs) result (successfulOpt)
   !write (*,*) "DEBUG: end of nOpt", n
   return
 end function nOpt
-
-! Flips a CA's cell value, and updates the sum
-subroutine flip (row,col,incs)
-  use incidence_structure
-
-  type(IncidenceStructure) incs
-  integer row,col
-  integer otherRow,newVal
-  !!write (*,*) "DEBUG: flip"
-  newVal=abs(incs%incidences(row,col)-1)
-  incs%incidences(row,col)=newVal
-  if (newVal==0) then
-     incs%sumTotal=incs%sumTotal-1
-     incs%sumInRow(row)=incs%sumInRow(row)-1
-     incs%sumInCol(col)=incs%sumInCol(col)-1
-     incs%dp(row,row)=incs%dp(row,row)-1
-  endif
-  if (newVal==1) then
-     incs%sumTotal=incs%sumTotal+1
-     incs%sumInRow(row)=incs%sumInRow(row)+1
-     incs%sumInCol(col)=incs%sumInCol(col)+1
-     incs%dp(row,row)=incs%dp(row,row)+1
-  endif
-
-  do otherRow=1,incs%v
-     if(otherRow==row) cycle
-     if(newVal==0 .and. incs%incidences(otherRow,col)==1) then
-        incs%dp(otherRow,row)=incs%dp(otherRow,row)-1
-        incs%dp(row,otherRow)=incs%dp(row,otherRow)-1
-     endif
-     if(newVal==1 .and. incs%incidences(otherRow,col)==1) then
-        incs%dp(otherRow,row)=incs%dp(otherRow,row)+1
-        incs%dp(row,otherRow)=incs%dp(row,otherRow)+1
-     endif
-  enddo
-end subroutine flip
