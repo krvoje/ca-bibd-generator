@@ -1,5 +1,6 @@
 module incidence_structure
-
+  use utils
+  
   implicit none
 
   type IncidenceStructure
@@ -11,6 +12,68 @@ module incidence_structure
   end type IncidenceStructure
 
 contains
+
+  subroutine construct(incs,v,k,lmbd)
+    type(IncidenceStructure) incs
+    integer v,k,lmbd
+    real r_r, b_r
+    integer i,j
+
+    call seedRandomGenerator()
+    
+    incs%v=v
+    incs%k=k
+    incs%lmbd=lmbd
+
+    ! Test for neccessary BIBD conditions
+    r_r=incs%lmbd*(incs%v-1)/(incs%k-1)
+    b_r=r_r*incs%v/incs%k
+
+    if (r_r/=int(r_r).or.b_r/=int(b_r)) then
+       write (*,*) "Invalid BIBD parameters."       
+       stop
+    else
+       incs%r=int(r_r)
+       incs%b=int(b_r)
+       print *, "v,k,λ,b,r=", incs%v,incs%k,incs%lmbd,incs%b,incs%r
+    endif
+
+    allocate(incs%incidences(1:incs%v,1:incs%b))
+    allocate(incs%dp(1:incs%v,1:incs%v))
+    allocate(incs%sumInRow(1:incs%v))
+    allocate(incs%sumInCol(1:incs%b))
+    
+    do i=1,incs%v
+       do j=1,incs%b
+          incs%incidences(i,j)=int(generateRandomNumber())
+          if(active(incs,i,j)) then
+             incs%sumInRow(i)=incs%sumInRow(i)+1
+             incs%sumInCol(j)=incs%sumInCol(j)+1
+             incs%sumTotal=incs%sumTotal+1
+          endif
+          if (incs%incidences(i,j)/=1 .and. incs%incidences(i,j)/=0) then
+             print *, "Random generator error, the incidence matrix is:"
+             print *, incs%incidences(i,j)
+          endif
+       enddo
+    enddo
+
+    do i=1,incs%v
+       do j=1,incs%v
+          incs%dp(i,j)=dot_product(incs%incidences(i,:), incs%incidences(j,:))
+       enddo
+    enddo
+
+    call writeMatrix(incs)
+  end subroutine construct
+
+  subroutine deconstruct(incs)
+    type(IncidenceStructure) incs
+    deallocate(incs%incidences)
+    deallocate(incs%dp)
+    deallocate(incs%sumInRow)
+    deallocate(incs%sumInCol)
+  end subroutine deconstruct
 
   logical function active(incs,row,col)
     type(IncidenceStructure) incs
@@ -119,5 +182,18 @@ contains
     write (*,*) "Is a BIBD!"
     return
   end function isBIBD
+
+  subroutine writeMatrix(incs)
+    type(IncidenceStructure) incs
+    integer i,j
+
+    write (*,*) "writeMatrix"
+    do i=1,incs%v
+       do j=1,incs%b
+          write (*,"(I1)",advance='no') incs%incidences(i,j)
+       enddo
+       print *
+    enddo
+  end subroutine writeMatrix
 
 end module incidence_structure

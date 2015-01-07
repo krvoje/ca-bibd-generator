@@ -1,10 +1,13 @@
-all: normal
+all: modules main
 modules:
-	gfortran -fsyntax-only mersene.f90
-	gfortran -fsyntax-only incidence_structure.f90
-normal: modules
-	gfortran incidence_structure.f90 randgen.f bibd_ca.f90 mersene.f90 -o bibd_ca
-inline: modules
-	gfortran -finline-functions randgen.f bibd_ca.f90 mersene.f90 -o bibd_ca_inline
+	mkdir -p obj mod
+	gfortran -c mersene.f90 -o obj/mersene.o -Jmod
+	gfortran -c utils.f90 -o obj/utils.o -Jmod
+	gfortran -c incidence_structure.f90 -o obj/incidence_structure.o -Jmod
+	gfortran -c randgen.f -o obj/randgen.o -Jmod
+main: modules
+	mkdir -p bin/
+	mkdir -p mod/
+	gfortran obj/*.o bibd_ca.f90 -o bin/bibd_ca -Imod/
 clean:	
-	rm bibd bibd_inline mtmod.mod incidence_structure.mod
+	rm -rf obj/ bin/ mod/

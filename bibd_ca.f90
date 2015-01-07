@@ -3,13 +3,13 @@
 program bibd_ca
 
   use incidence_structure
+  use utils
   
   implicit none
   
-  real generateRandomNumber
-
   type(IncidenceStructure) incs
   integer optSteps
+  integer v,k,lmbd
   integer i,j
   real r_r,b_r
   character(100) f
@@ -22,60 +22,19 @@ program bibd_ca
      stop        
   else
      call get_command_argument(1,f)
-     read (f,"(I10)") incs%v
+     read (f,"(I10)") v
      call get_command_argument(2,f)
-     read (f,"(I10)") incs%k
+     read (f,"(I10)") k
      call get_command_argument(3,f)
-     read (f,"(I10)") incs%lmbd
+     read (f,"(I10)") lmbd
      call get_command_argument(4,f)
      read (f,"(I10)") optSteps
   endif
 
-  ! Test for neccessary BIBD conditions
-  r_r=incs%lmbd*(incs%v-1)/(incs%k-1)
-  b_r=r_r*incs%v/incs%k
-
-  if (r_r/=int(r_r).or.b_r/=int(b_r)) then
-     write (*,*) "Invalid BIBD parameters."
-     stop
-  else
-     incs%r=int(r_r)
-     incs%b=int(b_r)
-     print *, "v,k,λ,b,r=", incs%v,incs%k,incs%lmbd,incs%b,incs%r
-  endif
-
-  allocate(incs%incidences(1:incs%v,1:incs%b))
-  allocate(incs%dp(1:incs%v,1:incs%v))
-  allocate(incs%sumInRow(1:incs%v))
-  allocate(incs%sumInCol(1:incs%b))
+  call construct(incs,v,k,lmbd)
 
   call seedRandomGenerator()
-  incs%incidences(1:incs%v,1:incs%b)=int(generateRandomNumber())
-  incs%sumInRow(1:incs%v)=0
-  incs%sumInCol(1:incs%b)=0
-
-  ! Check if the random generator generated correctly TODO: This is debug, remove
-  do i=1,incs%v
-     do j=1,incs%b
-        incs%incidences(i,j)=int(generateRandomNumber())
-        if(active(incs,i,j)) then
-           incs%sumInRow(i)=incs%sumInRow(i)+1
-           incs%sumInCol(j)=incs%sumInCol(j)+1
-           incs%sumTotal=incs%sumTotal+1
-        endif
-        if (incs%incidences(i,j)/=1 .and. incs%incidences(i,j)/=0) then
-           print *, "Random generator error, the incidence matrix is:"
-           print *, incs%incidences(i,j)
-        endif
-     enddo
-  enddo
-
-  do i=1,incs%v
-     do j=1,incs%v
-        incs%dp(i,j)=dot_product(incs%incidences(i,:), incs%incidences(j,:))
-     enddo
-  enddo
-
+  
   ! Rince and repeat until BIBD
   do while(isBIBD(incs) .eqv. .false.)     
      call randomCA_BIBD(incs,optSteps)
@@ -85,25 +44,8 @@ program bibd_ca
   enddo
 
   ! Memory cleanup
-  deallocate(incs%incidences)
-  deallocate(incs%dp)
-  deallocate(incs%sumInRow)
-  deallocate(incs%sumInCol)
+  call deconstruct(incs)
 end program bibd_ca
-
-subroutine writeMatrix(incs)
-  use incidence_structure
-
-  type(IncidenceStructure) incs
-
-  write (*,*) "writeMatrix"
-  do i=1,incs%v
-     do j=1,incs%b
-        write (*,"(I1)",advance='no') incs%incidences(i,j)
-     enddo
-     print *
-  enddo
-end subroutine writeMatrix
 
 subroutine randomCA_BIBD(incs, optSteps)
   use mtmod
@@ -121,8 +63,6 @@ subroutine randomCA_BIBD(incs, optSteps)
   integer distanceTilGoal, nothing, dot_prod
   logical theEnd, isIn, nOpt
 
-  real generateRandomNumber
-
   integer opt_count
   !write (*,*) "DEBUG: randomCA_BIBD"
   theEnd=.false.
@@ -134,7 +74,7 @@ subroutine randomCA_BIBD(incs, optSteps)
   nothing=0
 
   do while(theEnd.eqv..false.)
-     !call writeMatrix(incs%incidences,v,b)
+     !call writeMatrix(incs)
      if (nOpt(optSteps, incs) .eqv. .true.) then
         theEnd=.true.
         print *, "Total count of opt steps:", opt_count
@@ -191,36 +131,6 @@ subroutine randomCA_BIBD(incs, optSteps)
   enddo
 end subroutine randomCA_BIBD
 
-subroutine seedRandomGenerator()
-  use mtmod
-
-  external ZBQLINI
-  !!write (*,*) "DEBUG: seedRandomGenerator"
-  call ZBQLINI(time())
-  call sgrnd(time())
-  call srand(time())
-end subroutine seedRandomGenerator
-
-real function generateRandomNumber()
-  use mtmod
-
-  double precision ZBQLU01,ZBQLUAB, ZBQLEXP
-  integer i
-
-  !call seedRandomGenerator()
-
-  !!write (*,*) "DEBUG: generateRandomNumber"
-  if(modulo(time(),2) == 0) then
-     generateRandomNumber=grnd() !<- Ova implementacija Mersenne twistera je koma za ovu svrhu
-  else
-     generateRandomNumber=ZBQLU01(i)
-     !generateRandomNumber=rand()
-  endif
-  if (generateRandomNumber==1) generateRandomNumber=0 ! Računamo da se nikad ne dobije 1, jer bi to potrgalo sve
-  return
-
-end function generateRandomNumber
-
 recursive logical function nOpt(n,incs) result (successfulOpt)
   use incidence_structure
   implicit none
@@ -242,7 +152,7 @@ recursive logical function nOpt(n,incs) result (successfulOpt)
      endif
   endif
 
-  !call writeMatrix(incs%incidences,v,b)
+  !call writeMatrix(incs)
 
   do i=1,incs%v
      do j=1,incs%b
