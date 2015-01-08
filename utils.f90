@@ -19,14 +19,26 @@ contains
     !call seedRandomGenerator()
 
     !!write (*,*) "DEBUG: generateRandomNumber"
-    if(modulo(time(),2) == 0) then
-       generateRandomNumber=grnd() !<- Ova implementacija Mersenne twistera je koma za ovu svrhu
-    else
-       generateRandomNumber=ZBQLU01(i)
+    !if(modulo(time(),2) == 0) then
+    !   generateRandomNumber=grnd() !<- Ova implementacija Mersenne twistera je koma za ovu svrhu
+    !else
+    !   generateRandomNumber=ZBQLU01(i)
        !generateRandomNumber=rand()
-    endif
+    !endif
+    generateRandomNumber=grnd()
     if (generateRandomNumber==1) generateRandomNumber=0 ! Računamo da se nikad ne dobije 1, jer bi to potrgalo sve
     return
-
   end function generateRandomNumber
+
+  integer function generateZeroOne() result(rnd)
+    real generated
+
+    generated=generateRandomNumber()*99
+    if(generated>49) then
+       rnd=1
+    else
+       rnd=0
+    endif
+    return
+  end function generateZeroOne
 end module utils

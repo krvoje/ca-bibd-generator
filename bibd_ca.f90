@@ -31,10 +31,9 @@ program bibd_ca
      read (f,"(I10)") optSteps
   endif
 
+  call seedRandomGenerator()
   call construct(incs,v,k,lmbd)
 
-  call seedRandomGenerator()
-  
   ! Rince and repeat until BIBD
   do while(isBIBD(incs) .eqv. .false.)     
      call randomCA_BIBD(incs,optSteps)
@@ -66,11 +65,8 @@ subroutine randomCA_BIBD(incs, optSteps)
   integer opt_count
   !write (*,*) "DEBUG: randomCA_BIBD"
   theEnd=.false.
-  incs%sumTotal=0
   changeFactor=0
-
   opt_count=0
-
   nothing=0
 
   do while(theEnd.eqv..false.)
@@ -80,10 +76,6 @@ subroutine randomCA_BIBD(incs, optSteps)
         print *, "Total count of opt steps:", opt_count
         return
      endif
-
-     !if(nothing>100) then
-     !   print *, "Oh deer: ", nothing
-     !endif
 
      changeFactor=0
 
