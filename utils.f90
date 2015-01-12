@@ -10,6 +10,11 @@ contains
     call srand(time())
   end subroutine seedRandomGenerator
 
+  integer function randomInt(upper)
+    integer upper
+    randomInt=int(generateRandomNumber()*upper)
+  end function randomInt
+  
   real function generateRandomNumber()
     use mtmod
 

@@ -7,7 +7,7 @@ program bibd_ca
   
   implicit none
   
-  type(IncidenceStructure) incs
+  type(IncidenceStructure) IS
   integer optSteps
   integer v,k,lmbd
   integer i,j
@@ -32,89 +32,93 @@ program bibd_ca
   endif
 
   call seedRandomGenerator()
-  call construct(incs,v,k,lmbd)
+  call construct(IS,v,k,lmbd)
 
-  ! Rince and repeat until BIBD
-  do while(isBIBD(incs) .eqv. .false.)     
-     call randomCA_BIBD(incs,optSteps)
-     print *, "An incidence matrix for the given parameters found:"
-     call writeMatrix(incs)
-     stop
-  enddo
+  call randomCA_BIBD(IS,optSteps)
+  print *, "An incidence matrix for the given parameters found:"
+  call writeMatrix(IS)  
 
   ! Memory cleanup
-  call deconstruct(incs)
+  call deconstruct(IS)
 end program bibd_ca
 
-subroutine randomCA_BIBD(incs, optSteps)
+subroutine randomCA_BIBD(IS, optSteps)
   use mtmod
   use incidence_structure
   
   implicit none
 
-  type(IncidenceStructure) incs
-
-  integer rowSum, colSum
-  integer changeFactor ! Whether the cell will come dormant, or stay dormant
-  integer i,j,point
-  integer opt_row, opt_col
+  type(IncidenceStructure) IS
   integer optSteps
-  integer distanceTilGoal, nothing, dot_prod
-  logical theEnd, isIn, nOpt
 
-  integer opt_count
-  !write (*,*) "DEBUG: randomCA_BIBD"
-  theEnd=.false.
-  changeFactor=0
-  opt_count=0
-  nothing=0
+  integer changeFactor, maxChangeFactor, i, j, vertex
+  logical bibdFound, nOpt
 
-  do while(theEnd.eqv..false.)
-     !call writeMatrix(incs)
-     if (nOpt(optSteps, incs) .eqv. .true.) then
-        theEnd=.true.
-        print *, "Total count of opt steps:", opt_count
+  bibdFound=.false.
+  ! Rince and repeat until BIBD
+  do while(bibdFound .eqv. .false.)
+     if (nOpt(optSteps, IS) .eqv. .true.) then
+        bibdFound=.true.
         return
      endif
 
      changeFactor=0
 
-     i=int(generateRandomNumber()*(incs%v))+1
-     j=int(generateRandomNumber()*(incs%b))+1
-     colSum=incs%sumInCol(j)
-     rowSum=incs%sumInRow(i)
+     i=randomInt((IS%VERTICES))+1
+     j=randomInt((IS%BLOCKS))+1   
 
-     if (dormant(incs,i,j)) then
-        do point=1,incs%v
-           if (point==i) cycle
-           dot_prod=incs%dp(i,point)
-           if (dot_prod<incs%lmbd) changeFactor=changeFactor+1 ! At most v-1           
+     if (dormant(IS,i,j)) then
+        do vertex=1,IS%VERTICES
+           if (IS%BLOCK_INTERSECTION(i,vertex)<IS%LAMBDA) then
+              ! Can increase at most for v
+              changeFactor=changeFactor+1
+           endif
         enddo
-        if (incs%sumTotal<incs%v*incs%r) changeFactor=changeFactor+(incs%v*incs%r-incs%sumTotal)
-        if (colSum<incs%k) changeFactor=changeFactor+(incs%k-colSum) ! At most k
-        if (rowSum<incs%r) changeFactor=changeFactor+(incs%r-rowSum) ! At most r
-        if(int(generateRandomNumber()*(incs%v+incs%k-1+incs%r-1))<changeFactor) then
-           call flip(incs,i,j)
-           !if(nothing/=0) print *, "Inactive for", nothing, "iterations"
-           nothing=0
-        else
-           nothing=nothing+1
+        if (IS%SUM_TOTAL<IS%VERTICES*IS%VERTICES_PER_BLOCK) then
+           ! Can increase at most for (v*r-1)
+           changeFactor=changeFactor+(IS%VERTICES*IS%VERTICES_PER_BLOCK-IS%SUM_TOTAL)
         endif
-     else if (active(incs,i,j)) then
-        do point=1,incs%v
-           if (point==i) cycle
-           dot_prod=incs%dp(i,point)
-           if (dot_prod>incs%lmbd) changeFactor=changeFactor+1 ! Najviše v-1
+        if (IS%SUM_IN_COL(j)<IS%INCIDENCES_PER_VERTICE) then
+           ! Can increase at most for (k-1)
+           changeFactor=changeFactor+(IS%INCIDENCES_PER_VERTICE-IS%SUM_IN_COL(j))
+        endif
+        if (IS%SUM_IN_ROW(i)<IS%VERTICES_PER_BLOCK) then
+           ! Can increase at most for (r-1)
+           changeFactor=changeFactor+(IS%VERTICES_PER_BLOCK-IS%SUM_IN_ROW(i))
+        endif
+        !if(randomInt((IS%VERTICES+IS%INCIDENCES_PER_VERTICE+IS%VERTICES_PER_BLOCK-1))<changeFactor) then
+        maxChangeFactor=IS%VERTICES &
+             + (IS%VERTICES*IS%VERTICES_PER_BLOCK-1) &
+             + (IS%INCIDENCES_PER_VERTICE-1) &
+             + (IS%VERTICES_PER_BLOCK-1)
+        if(randomInt(maxChangeFactor)<changeFactor) then
+           call flip(IS,i,j)
+        endif
+     else if (active(IS,i,j)) then
+        do vertex=1,IS%VERTICES
+           if (IS%BLOCK_INTERSECTION(i,vertex)>IS%LAMBDA) then
+              ! Can increase at most for v              
+              changeFactor=changeFactor+1
+           endif
         enddo
-        if (incs%sumTotal>incs%v*incs%r) changeFactor=changeFactor+(incs%sumTotal-incs%v*incs%r)
-        if (colSum>incs%k) changeFactor=changeFactor+(colSum-incs%k) ! Najviše v-k+1?
-        if (rowSum>incs%r) changeFactor=changeFactor+(rowSum-incs%r) ! Najviše b-r+1?
-        if(int(generateRandomNumber()*(incs%v-incs%k+1+incs%b-incs%r+1))<changeFactor) then
-           call flip(incs,i,j)
-           !if(nothing/=0) print *, "Inactive for", nothing, "iterations"
-           nothing=0
-        else
-           nothing=nothing+1           
+        if (IS%SUM_TOTAL>IS%VERTICES*IS%VERTICES_PER_BLOCK) then
+           ! Can increase at most for (v*b-(v*r-1))
+           changeFactor=changeFactor+(IS%SUM_TOTAL-IS%VERTICES*IS%VERTICES_PER_BLOCK)
+        endif
+        if (IS%SUM_IN_COL(j)>IS%INCIDENCES_PER_VERTICE) then
+           ! Can increase at most for (v-(k-1))
+           changeFactor=changeFactor+(IS%SUM_IN_COL(j)-IS%INCIDENCES_PER_VERTICE)
+        endif
+        if (IS%SUM_IN_ROW(i)>IS%VERTICES_PER_BLOCK) then
+           ! Can increase at most for (b-(r-1))
+           changeFactor=changeFactor+(IS%SUM_IN_ROW(i)-IS%VERTICES_PER_BLOCK)
+        endif
+        maxChangeFactor=IS%VERTICES &
+             + (IS%VERTICES*IS%BLOCKS-(IS%VERTICES*IS%VERTICES_PER_BLOCK-1)) &
+             + (IS%VERTICES-(IS%INCIDENCES_PER_VERTICE-1)) &
+             + (IS%BLOCKS-(IS%VERTICES_PER_BLOCK-1))
+        if(randomInt(maxChangeFactor)<changeFactor) then
+           call flip(IS,i,j)
         endif
      else
         print *, "Severe fatal error"
@@ -123,58 +127,57 @@ subroutine randomCA_BIBD(incs, optSteps)
   enddo
 end subroutine randomCA_BIBD
 
-recursive logical function nOpt(n,incs) result (successfulOpt)
+recursive logical function nOpt(n,IS) result (successfulOpt)
   use incidence_structure
   implicit none
 
-  type(IncidenceStructure) incs
+  type(IncidenceStructure) IS
   integer n,i,j
 
   successfulOpt=.false.
   if(n<1) then
      successfulOpt=.false.
      return
-  else if (abs(incs%sumTotal-incs%v*incs%r)/=n) then
+  else if (abs(IS%SUM_TOTAL-IS%VERTICES*IS%VERTICES_PER_BLOCK)/=n) then
      if(n==1) then
         successfulOpt=.false.
         return
      else
-        successfulOpt = nOpt(n-1,incs)
+        successfulOpt = nOpt(n-1,IS)
         return
      endif
   endif
 
-  !call writeMatrix(incs)
+  !call writeMatrix(IS)
 
-  do i=1,incs%v
-     do j=1,incs%b
+  do i=1,IS%VERTICES
+     do j=1,IS%BLOCKS
         if(& ! If it makes sence to do an n-opt step
-             (dormant(incs,i,j) &
-             .and. incs%sumTotal==incs%v*incs%r-n &
-             .and. (incs%sumInRow(i)==incs%r-n .or. incs%sumInCol(j)==incs%k-n) &
+             (dormant(IS,i,j) &
+             .and. IS%SUM_TOTAL==IS%VERTICES*IS%VERTICES_PER_BLOCK-n &
+             .and. (IS%SUM_IN_ROW(i)==IS%VERTICES_PER_BLOCK-n .or. IS%SUM_IN_COL(j)==IS%INCIDENCES_PER_VERTICE-n) &
              )&
              .or.&
-             (active(incs,i,j) &
-             .and. incs%sumTotal==incs%v*incs%r+n &
-             .and. (incs%sumInRow(i)==incs%r+n .or. incs%sumInCol(j)==incs%k+n))&
+             (active(IS,i,j) &
+             .and. IS%SUM_TOTAL==IS%VERTICES*IS%VERTICES_PER_BLOCK+n &
+             .and. (IS%SUM_IN_ROW(i)==IS%VERTICES_PER_BLOCK+n .or. IS%SUM_IN_COL(j)==IS%INCIDENCES_PER_VERTICE+n))&
              ) then
-           call flip(incs,i,j)
+           call flip(IS,i,j)
            if(n == 1) then
-              if (isBIBD(incs).eqv..True.) then
+              if (isBIBD(IS).eqv..True.) then
                  !print *, n, "-opt yielded a BIBD"
                  successfulOpt=.true.
                  return
               endif
-           else if (abs(incs%sumTotal-incs%v*incs%r)==n - 1) then
+           else if (abs(IS%SUM_TOTAL-IS%VERTICES*IS%VERTICES_PER_BLOCK)==n - 1) then
               !write (*,*) "DEBUG: Calling n-1 opt", n
-              if(nOpt(n-1,incs)) then
+              if(nOpt(n-1,IS)) then
                  print *, n, "-opt yielded a BIBD"
                  successfulOpt=.true.
                  return
               endif
            else
-              call flip(incs,i,j)
-              print *, n, "-opt fail"
+              call flip(IS,i,j)
               successfulOpt=.false.
               return
            endif
