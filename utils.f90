@@ -46,4 +46,16 @@ contains
     endif
     return
   end function generateZeroOne
+
+  subroutine increment(var,val)
+    integer var,val
+    var = var + val
+    return
+  end subroutine increment
+
+  subroutine decrement(var,val)
+    integer var,val
+    var = var - val
+    return
+  end subroutine decrement
 end module utils

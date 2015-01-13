@@ -71,53 +71,52 @@ subroutine randomCA_BIBD(IS, optSteps)
         do vertex=1,IS%VERTICES
            if (IS%BLOCK_INTERSECTION(i,vertex)<IS%LAMBDA) then
               ! Can increase at most for v
-              changeFactor=changeFactor+1
+              call increment(changefactor, 1)
            endif
         enddo
         if (IS%SUM_TOTAL<IS%VERTICES*IS%VERTICES_PER_BLOCK) then
            ! Can increase at most for (v*r-1)
-           changeFactor=changeFactor+(IS%VERTICES*IS%VERTICES_PER_BLOCK-IS%SUM_TOTAL)
+           call increment(changefactor, (IS%VERTICES*IS%VERTICES_PER_BLOCK-IS%SUM_TOTAL))
         endif
         if (IS%SUM_IN_COL(j)<IS%INCIDENCES_PER_VERTICE) then
            ! Can increase at most for (k-1)
-           changeFactor=changeFactor+(IS%INCIDENCES_PER_VERTICE-IS%SUM_IN_COL(j))
+           call increment(changefactor, (IS%INCIDENCES_PER_VERTICE-IS%SUM_IN_COL(j)))
         endif
         if (IS%SUM_IN_ROW(i)<IS%VERTICES_PER_BLOCK) then
            ! Can increase at most for (r-1)
-           changeFactor=changeFactor+(IS%VERTICES_PER_BLOCK-IS%SUM_IN_ROW(i))
+           call increment(changefactor, (IS%VERTICES_PER_BLOCK-IS%SUM_IN_ROW(i)))
         endif
-        !if(randomInt((IS%VERTICES+IS%INCIDENCES_PER_VERTICE+IS%VERTICES_PER_BLOCK-1))<changeFactor) then
         maxChangeFactor=IS%VERTICES &
              + (IS%VERTICES*IS%VERTICES_PER_BLOCK-1) &
              + (IS%INCIDENCES_PER_VERTICE-1) &
              + (IS%VERTICES_PER_BLOCK-1)
-        if(randomInt(maxChangeFactor)<changeFactor) then
+        if(randomInt(maxChangeFactor) < changeFactor) then
            call flip(IS,i,j)
         endif
      else if (active(IS,i,j)) then
         do vertex=1,IS%VERTICES
            if (IS%BLOCK_INTERSECTION(i,vertex)>IS%LAMBDA) then
               ! Can increase at most for v              
-              changeFactor=changeFactor+1
+              call increment(changefactor, 1)
            endif
         enddo
         if (IS%SUM_TOTAL>IS%VERTICES*IS%VERTICES_PER_BLOCK) then
            ! Can increase at most for (v*b-(v*r-1))
-           changeFactor=changeFactor+(IS%SUM_TOTAL-IS%VERTICES*IS%VERTICES_PER_BLOCK)
+           call increment(changefactor, (IS%SUM_TOTAL-IS%VERTICES*IS%VERTICES_PER_BLOCK))
         endif
         if (IS%SUM_IN_COL(j)>IS%INCIDENCES_PER_VERTICE) then
            ! Can increase at most for (v-(k-1))
-           changeFactor=changeFactor+(IS%SUM_IN_COL(j)-IS%INCIDENCES_PER_VERTICE)
+           call increment(changefactor, (IS%SUM_IN_COL(j)-IS%INCIDENCES_PER_VERTICE))
         endif
         if (IS%SUM_IN_ROW(i)>IS%VERTICES_PER_BLOCK) then
            ! Can increase at most for (b-(r-1))
-           changeFactor=changeFactor+(IS%SUM_IN_ROW(i)-IS%VERTICES_PER_BLOCK)
+           call increment(changefactor, (IS%SUM_IN_ROW(i)-IS%VERTICES_PER_BLOCK))
         endif
         maxChangeFactor=IS%VERTICES &
              + (IS%VERTICES*IS%BLOCKS-(IS%VERTICES*IS%VERTICES_PER_BLOCK-1)) &
              + (IS%VERTICES-(IS%INCIDENCES_PER_VERTICE-1)) &
              + (IS%BLOCKS-(IS%VERTICES_PER_BLOCK-1))
-        if(randomInt(maxChangeFactor)<changeFactor) then
+        if(randomInt(maxChangeFactor) < changeFactor) then
            call flip(IS,i,j)
         endif
      else
@@ -154,13 +153,13 @@ recursive logical function nOpt(n,IS) result (successfulOpt)
      do j=1,IS%BLOCKS
         if(& ! If it makes sence to do an n-opt step
              (dormant(IS,i,j) &
-             .and. IS%SUM_TOTAL==IS%VERTICES*IS%VERTICES_PER_BLOCK-n &
-             .and. (IS%SUM_IN_ROW(i)==IS%VERTICES_PER_BLOCK-n .or. IS%SUM_IN_COL(j)==IS%INCIDENCES_PER_VERTICE-n) &
+             .and. IS%SUM_TOTAL<=IS%VERTICES*IS%VERTICES_PER_BLOCK-n &
+             .and. (IS%SUM_IN_ROW(i)<=IS%VERTICES_PER_BLOCK-n .or. IS%SUM_IN_COL(j)<=IS%INCIDENCES_PER_VERTICE-n) &
              )&
              .or.&
              (active(IS,i,j) &
-             .and. IS%SUM_TOTAL==IS%VERTICES*IS%VERTICES_PER_BLOCK+n &
-             .and. (IS%SUM_IN_ROW(i)==IS%VERTICES_PER_BLOCK+n .or. IS%SUM_IN_COL(j)==IS%INCIDENCES_PER_VERTICE+n))&
+             .and. IS%SUM_TOTAL>=IS%VERTICES*IS%VERTICES_PER_BLOCK+n &
+             .and. (IS%SUM_IN_ROW(i)>=IS%VERTICES_PER_BLOCK+n .or. IS%SUM_IN_COL(j)>=IS%INCIDENCES_PER_VERTICE+n))&
              ) then
            call flip(IS,i,j)
            if(n == 1) then
