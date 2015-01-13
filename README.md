@@ -7,6 +7,7 @@ Tries to generate a balanced incomplete block design (http://mathworld.wolfram.c
 Builds with gfortran 4.7.2.
 
 Usage:
+
     ./bin/bibd_ca v k lambda optimisation-steps
 
 For instance to generate a Fano plane matrix:
