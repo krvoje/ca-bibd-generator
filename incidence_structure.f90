@@ -13,8 +13,14 @@ module incidence_structure
      integer INCIDENCES_PER_VERTICE!k
      integer BLOCKS !b
      integer LAMBDA!lmbd
+     
+     ! Heuristic helper vals
      integer VERTICES_PER_BLOCK!r
-     integer SUM_TOTAL
+     integer SUM_TOTAL     
+     integer VERTICES_X_BLOCKS     
+     integer IDEAL_SUM ! Should be VERTICES_PER_BLOC*VERTICES
+     logical SUM_TOTAL_LESS_THAN_IDEAL
+     logical SUM_TOTAL_MORE_THAN_IDEAL
   end type IncidenceStructure
 
 contains
@@ -52,6 +58,13 @@ contains
     IS%SUM_IN_ROW(1:IS%VERTICES)=0
     IS%SUM_IN_COL(1:IS%BLOCKS)=0
     IS%SUM_TOTAL=0
+
+    IS%IDEAL_SUM=IS%VERTICES_PER_BLOCK*IS%VERTICES
+    
+    IS%SUM_TOTAL_LESS_THAN_IDEAL=IS%SUM_TOTAL<=IS%IDEAL_SUM
+    IS%SUM_TOTAL_MORE_THAN_IDEAL=IS%SUM_TOTAL>=IS%IDEAL_SUM
+
+    IS%VERTICES_X_BLOCKS = IS%VERTICES * IS%BLOCKS
   end subroutine construct
 
   subroutine updateCache(IS)
@@ -73,7 +86,10 @@ contains
        enddo
     enddo
 
-    IS%SUM_TOTAL=sum(IS%SUM_IN_ROW(:))
+    IS%SUM_TOTAL=sum(IS%SUM_IN_ROW(:))  
+    
+    IS%SUM_TOTAL_LESS_THAN_IDEAL = IS%SUM_TOTAL <= IS%IDEAL_SUM
+    IS%SUM_TOTAL_MORE_THAN_IDEAL = IS%SUM_TOTAL >= IS%IDEAL_SUM
   end subroutine updateCache
   
   subroutine deconstruct(IS)
@@ -157,6 +173,11 @@ contains
     integer i,j
     
     !call writeMatrix(IS)
+
+    if(IS%SUM_TOTAL /= IS%IDEAL_SUM) then
+       isBIBD=.False.
+       return
+    endif
     
     ! If the incidence matrix has a row with sum non-equal to r, this is not a BIBD
     do i=1,IS%VERTICES
@@ -187,7 +208,6 @@ contains
 
     ! Otherwise, we got a BIBD
     isBIBD=.True.
-    write (*,*) "Is a BIBD!"
     return
   end function isBIBD
 
