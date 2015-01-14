@@ -181,7 +181,7 @@ contains
     
     ! If the incidence matrix has a row with sum non-equal to r, this is not a BIBD
     do i=1,IS%VERTICES
-       if(IS%SUM_IN_ROW(i)/=IS%VERTICES_PER_BLOCK) then
+       if(IS%SUM_IN_ROW(i)/=IS%INCIDENCES_PER_VERTICE) then
           isBIBD=.False.
           return
        endif
