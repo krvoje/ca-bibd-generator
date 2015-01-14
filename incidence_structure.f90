@@ -21,6 +21,12 @@ module incidence_structure
      integer IDEAL_SUM ! Should be VERTICES_PER_BLOC*VERTICES
      logical SUM_TOTAL_LESS_THAN_IDEAL
      logical SUM_TOTAL_MORE_THAN_IDEAL
+
+     integer MAX_CHANGE_FACTOR
+     integer MAX_CHANGE_FACTOR_DORMANT
+     integer MAX_CHANGE_FACTOR_ACTIVE
+
+     integer CHANGE_FACTOR_ALIVE_INCREMENT
   end type IncidenceStructure
 
 contains
@@ -65,6 +71,18 @@ contains
     IS%SUM_TOTAL_MORE_THAN_IDEAL=IS%SUM_TOTAL>=IS%IDEAL_SUM
 
     IS%VERTICES_X_BLOCKS = IS%VERTICES * IS%BLOCKS
+
+    IS%MAX_CHANGE_FACTOR_DORMANT=(IS%VERTICES-1) &
+         + (IS%IDEAL_SUM-1) &
+         + (IS%INCIDENCES_PER_VERTICE-1) &
+         + (IS%VERTICES_PER_BLOCK-1)
+    IS%MAX_CHANGE_FACTOR_ACTIVE=(IS%VERTICES-1) &
+         + (IS%VERTICES_X_BLOCKS-(IS%IDEAL_SUM-1)) &
+         + (IS%VERTICES-(IS%INCIDENCES_PER_VERTICE-1)) &
+         + (IS%BLOCKS-(IS%VERTICES_PER_BLOCK-1))
+    IS%MAX_CHANGE_FACTOR = IS%MAX_CHANGE_FACTOR_DORMANT + IS%MAX_CHANGE_FACTOR_ACTIVE
+
+    IS%CHANGE_FACTOR_ALIVE_INCREMENT = max(IS%INCIDENCES_PER_VERTICE, IS%VERTICES_PER_BLOCK)
   end subroutine construct
 
   subroutine updateCache(IS)
@@ -216,12 +234,18 @@ contains
     integer i,j
 
     write(*,*),"["
-    do i=1,IS%VERTICES
-       do j=1,IS%BLOCKS
+    do j=1,IS%BLOCKS
+       do i=1,IS%VERTICES
           write (*,"(I1)",advance='no') IS%incidences(i,j)
        enddo
+       write (*,"(A1)",advance='no') "-"
+       write (*,"(I1)",advance='no') IS%SUM_IN_COL(j)
        print *
     enddo
+    do i=1,IS%VERTICES
+       write (*,"(I1)",advance='no') IS%SUM_IN_ROW(i)
+    enddo
+    print *
     write(*,*),"]"
   end subroutine writeMatrix
 

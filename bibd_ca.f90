@@ -54,6 +54,10 @@ subroutine randomCA_BIBD(IS, optSteps)
   integer changeFactor, maxChangeFactor, i, j, vertex
   logical bibdFound, nOpt
 
+  integer nothingChanged
+
+  nothingChanged=0
+
   bibdFound=.false.
   ! Rince and repeat until BIBD
   do while(bibdFound .eqv. .false.)
@@ -69,8 +73,9 @@ subroutine randomCA_BIBD(IS, optSteps)
 
      if (dormant(IS,i,j)) then
         do vertex=1,IS%VERTICES
+           if(vertex==i) cycle
            if (IS%BLOCK_INTERSECTION(i,vertex)<IS%LAMBDA) then
-              ! Can increase at most for v
+              ! Can increase at most for v-1
               call increment(changefactor, 1)
            endif
         enddo
@@ -86,18 +91,17 @@ subroutine randomCA_BIBD(IS, optSteps)
            ! Can increase at most for (r-1)
            call increment(changefactor, (IS%VERTICES_PER_BLOCK-IS%SUM_IN_ROW(i)))
         endif
-        maxChangeFactor=IS%VERTICES &
-             + (IS%IDEAL_SUM-1) &
-             + (IS%INCIDENCES_PER_VERTICE-1) &
-             + (IS%VERTICES_PER_BLOCK-1)
-        if(randomInt(maxChangeFactor) < changeFactor) then
+        if(randomInt(IS%MAX_CHANGE_FACTOR) < changeFactor) then
            call flip(IS,i,j)
         endif
      else if (active(IS,i,j)) then
         do vertex=1,IS%VERTICES
+           if(vertex==i) cycle
            if (IS%BLOCK_INTERSECTION(i,vertex)>IS%LAMBDA) then
-              ! Can increase at most for v              
-              call increment(changefactor, 1)
+              ! Can increase at most for v
+              ! Note: This needs to be larger than in the dormant case,
+              ! since otherwise we get have too high values in the matrix
+              call increment(changefactor, IS%CHANGE_FACTOR_ALIVE_INCREMENT)
            endif
         enddo
         if (IS%SUM_TOTAL_MORE_THAN_IDEAL) then
@@ -112,11 +116,7 @@ subroutine randomCA_BIBD(IS, optSteps)
            ! Can increase at most for (b-(r-1))
            call increment(changefactor, (IS%SUM_IN_ROW(i)-IS%VERTICES_PER_BLOCK))
         endif
-        maxChangeFactor=IS%VERTICES &
-             + (IS%VERTICES_X_BLOCKS-(IS%IDEAL_SUM-1)) &
-             + (IS%VERTICES-(IS%INCIDENCES_PER_VERTICE-1)) &
-             + (IS%BLOCKS-(IS%VERTICES_PER_BLOCK-1))
-        if(randomInt(maxChangeFactor) < changeFactor) then
+        if(randomInt(IS%MAX_CHANGE_FACTOR) < changeFactor) then
            call flip(IS,i,j)
         endif
      else
