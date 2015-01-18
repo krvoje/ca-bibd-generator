@@ -70,53 +70,51 @@ subroutine randomCA_BIBD(IS, optSteps)
 
      i=randomInt(IS%VERTICES)+1
      j=randomInt(IS%BLOCKS)+1
-
+        
      if (dormant(IS,i,j)) then
         do vertex=1,IS%VERTICES
            if(vertex==i) cycle
-           if (IS%BLOCK_INTERSECTION(i,vertex)<IS%LAMBDA) then
+           if (IS%BLOCK_INTERSECTION(i,vertex) < IS%LAMBDA) then
               ! Can increase at most for v-1
-              call increment(changefactor, 1)
+              call increment(changefactor, abs(IS%BLOCK_INTERSECTION(i,vertex) - IS%LAMBDA))
            endif
         enddo
-        if (IS%SUM_TOTAL_LESS_THAN_IDEAL) then
+        if (IS%SUM_TOTAL < IS%SUM_IDEAL) then
            ! Can increase at most for (v*r-1)
-           call increment(changefactor, abs(IS%IDEAL_SUM - IS%SUM_TOTAL))
+           call increment(changefactor, abs(IS%SUM_IDEAL - IS%SUM_TOTAL))
         endif
         if (IS%SUM_IN_COL(j)<IS%INCIDENCES_PER_VERTICE) then
            ! Can increase at most for (k-1)
-           call increment(changefactor, (IS%INCIDENCES_PER_VERTICE-IS%SUM_IN_COL(j)))
-        endif
+           call increment(changefactor, IS%INCIDENCES_PER_VERTICE)
+        endif        
         if (IS%SUM_IN_ROW(i)<IS%VERTICES_PER_BLOCK) then
            ! Can increase at most for (r-1)
-           call increment(changefactor, (IS%VERTICES_PER_BLOCK-IS%SUM_IN_ROW(i)))
+           call increment(changefactor, IS%VERTICES_PER_BLOCK)
         endif
-        if(randomInt(IS%MAX_CHANGE_FACTOR) < changeFactor) then
+        if(randomInt(IS%MAX_CHANGE_FACTOR_DORMANT) < changeFactor) then
            call flip(IS,i,j)
         endif
      else if (active(IS,i,j)) then
         do vertex=1,IS%VERTICES
            if(vertex==i) cycle
-           if (IS%BLOCK_INTERSECTION(i,vertex)>IS%LAMBDA) then
-              ! Can increase at most for v
-              ! Note: This needs to be larger than in the dormant case,
-              ! since otherwise we get have too high values in the matrix
-              call increment(changefactor, IS%CHANGE_FACTOR_ALIVE_INCREMENT)
+           if (IS%BLOCK_INTERSECTION(i,vertex) > IS%LAMBDA) then
+              ! Can increase at most for v-1
+              call increment(changefactor, abs(IS%BLOCK_INTERSECTION(i,vertex) - IS%LAMBDA))
            endif
         enddo
-        if (IS%SUM_TOTAL_MORE_THAN_IDEAL) then
-           ! Can increase at most for (v*b-(v*r-1))
-           call increment(changefactor, abs(IS%IDEAL_SUM - IS%SUM_TOTAL))
+        if (IS%SUM_TOTAL > IS%SUM_IDEAL) then
+           ! Can increase at most for (v*r-1)
+           call increment(changefactor, abs(IS%SUM_IDEAL - IS%SUM_TOTAL))
         endif
         if (IS%SUM_IN_COL(j)>IS%INCIDENCES_PER_VERTICE) then
            ! Can increase at most for (v-(k-1))
-           call increment(changefactor, (IS%SUM_IN_COL(j)-IS%INCIDENCES_PER_VERTICE))
+           call increment(changefactor, IS%BLOCKS)
         endif
         if (IS%SUM_IN_ROW(i)>IS%VERTICES_PER_BLOCK) then
            ! Can increase at most for (b-(r-1))
-           call increment(changefactor, (IS%SUM_IN_ROW(i)-IS%VERTICES_PER_BLOCK))
+           call increment(changefactor, (IS%VERTICES))
         endif
-        if(randomInt(IS%MAX_CHANGE_FACTOR) < changeFactor) then
+        if(randomInt(IS%MAX_CHANGE_FACTOR_ACTIVE) < changeFactor) then
            call flip(IS,i,j)
         endif
      else
@@ -142,15 +140,15 @@ recursive logical function nOpt(n,topOpt,IS) result (successfulOpt)
      return
   endif
   
-  if (abs(IS%IDEAL_SUM - IS%SUM_TOTAL)/=n) then
+  if (abs(IS%SUM_IDEAL - IS%SUM_TOTAL)/=n) then
      successfulOpt = nOpt(n-1,n-1,IS)
      return
   endif
 
   !call writeMatrix(IS)
 
-  sumTotal_lt = IS%SUM_TOTAL<=IS%IDEAL_SUM - n
-  sumTotal_gt = IS%SUM_TOTAL>=IS%IDEAL_SUM + n
+  sumTotal_lt = IS%SUM_TOTAL<=IS%SUM_IDEAL - n
+  sumTotal_gt = IS%SUM_TOTAL>=IS%SUM_IDEAL + n
     
   do i=1,IS%VERTICES
      sumInRow_lt=IS%SUM_IN_ROW(i)<=IS%VERTICES_PER_BLOCK-n
