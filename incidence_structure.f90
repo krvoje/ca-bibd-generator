@@ -17,7 +17,7 @@ module incidence_structure
      ! Heuristic helper vals
      integer VERTICES_PER_BLOCK!r
      integer SUM_TOTAL     
-     integer VERTICES_X_BLOCKS     
+     integer VERTICES_X_BLOCKS
      integer SUM_IDEAL ! Should be VERTICES_PER_BLOC*VERTICES
      logical SUM_TOTAL_LESS_THAN_IDEAL
      logical SUM_TOTAL_MORE_THAN_IDEAL
@@ -26,8 +26,6 @@ module incidence_structure
      integer MAX_CHANGE_FACTOR
      integer MAX_CHANGE_FACTOR_DORMANT
      integer MAX_CHANGE_FACTOR_ACTIVE
-
-     integer CHANGE_FACTOR_ALIVE_INCREMENT
   end type IncidenceStructure
 
 contains
@@ -73,18 +71,6 @@ contains
     IS%SUM_TOTAL_NOT_IDEAL = (IS%SUM_TOTAL /= IS%SUM_IDEAL)
 
     IS%VERTICES_X_BLOCKS = IS%VERTICES * IS%BLOCKS
-
-    IS%MAX_CHANGE_FACTOR_DORMANT=(IS%VERTICES-1) &
-         + abs(IS%SUM_IDEAL - IS%SUM_TOTAL) &
-         + IS%INCIDENCES_PER_VERTICE -1 &
-         + (IS%VERTICES_PER_BLOCK-1)
-
-    IS%MAX_CHANGE_FACTOR_ACTIVE=IS%CHANGE_FACTOR_ALIVE_INCREMENT * (IS%VERTICES-1) &
-         + IS%BLOCKS &
-         + IS%VERTICES
-    IS%MAX_CHANGE_FACTOR = IS%MAX_CHANGE_FACTOR_DORMANT + IS%MAX_CHANGE_FACTOR_ACTIVE
-
-    IS%CHANGE_FACTOR_ALIVE_INCREMENT = max(IS%INCIDENCES_PER_VERTICE, IS%VERTICES_PER_BLOCK)
   end subroutine construct
 
   subroutine updateCache(IS)

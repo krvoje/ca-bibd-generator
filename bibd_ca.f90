@@ -75,46 +75,46 @@ subroutine randomCA_BIBD(IS, optSteps)
         do vertex=1,IS%VERTICES
            if(vertex==i) cycle
            if (IS%BLOCK_INTERSECTION(i,vertex) < IS%LAMBDA) then
-              ! Can increase at most for v-1
               call increment(changefactor, IS%LAMBDA - IS%BLOCK_INTERSECTION(i,vertex))
            endif
         enddo
         if (IS%SUM_TOTAL < IS%SUM_IDEAL) then
-           ! Can increase at most for (v*r-1)
            call increment(changefactor, IS%SUM_IDEAL - IS%SUM_TOTAL)
         endif
         if (IS%SUM_IN_COL(j)<IS%INCIDENCES_PER_VERTICE) then
-           ! Can increase at most for (k-1)
            call increment(changefactor, IS%INCIDENCES_PER_VERTICE)
         endif        
         if (IS%SUM_IN_ROW(i)<IS%VERTICES_PER_BLOCK) then
-           ! Can increase at most for (r-1)
            call increment(changefactor, IS%VERTICES_PER_BLOCK)
         endif
-        if(randomInt(IS%MAX_CHANGE_FACTOR_DORMANT) < changeFactor) then
+        maxChangeFactor = IS%LAMBDA*(IS%VERTICES-1) &
+             + IS%SUM_IDEAL &
+             + IS%INCIDENCES_PER_VERTICE &
+             + IS%VERTICES_PER_BLOCK
+        if(randomInt(maxChangeFactor) < changeFactor) then
            call flip(IS,i,j)
         endif
      else if (active(IS,i,j)) then
         do vertex=1,IS%VERTICES
            if(vertex==i) cycle
            if (IS%BLOCK_INTERSECTION(i,vertex) > IS%LAMBDA) then
-              ! Can increase at most for v-1
               call increment(changefactor, IS%BLOCK_INTERSECTION(i,vertex) - IS%LAMBDA)
            endif
         enddo
         if (IS%SUM_TOTAL > IS%SUM_IDEAL) then
-           ! Can increase at most for (v*r-1)
            call increment(changefactor, IS%SUM_TOTAL - IS%SUM_IDEAL)
         endif
         if (IS%SUM_IN_COL(j)>IS%INCIDENCES_PER_VERTICE) then
-           ! Can increase at most for (v-(k-1))
            call increment(changefactor, IS%BLOCKS)
         endif
         if (IS%SUM_IN_ROW(i)>IS%VERTICES_PER_BLOCK) then
-           ! Can increase at most for (b-(r-1))
            call increment(changefactor, IS%VERTICES)
         endif
-        if(randomInt(IS%MAX_CHANGE_FACTOR_ACTIVE) < changeFactor) then
+        maxChangeFactor = IS%BLOCKS*(IS%VERTICES-1) &
+             + IS%SUM_TOTAL &
+             + IS%BLOCKS &
+             + IS%VERTICES
+        if(randomInt(maxChangeFactor) < changeFactor) then
            call flip(IS,i,j)
         endif
      else
