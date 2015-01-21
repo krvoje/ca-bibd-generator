@@ -51,7 +51,7 @@ subroutine randomCA_BIBD(IS, optSteps)
   type(IncidenceStructure) IS
   integer optSteps
 
-  integer changeFactor, maxChangeFactor, i, j, vertex
+  integer changeFactor, maxChangeFactor, i, j, vertex, blok
   logical bibdFound, nOpt
 
   integer nothingChanged
@@ -74,8 +74,8 @@ subroutine randomCA_BIBD(IS, optSteps)
      if (dormant(IS,i,j)) then
         do vertex=1,IS%VERTICES
            if(vertex==i) cycle
-           if (IS%BLOCK_INTERSECTION(i,vertex) < IS%LAMBDA) then
-              call increment(changefactor, IS%LAMBDA - IS%BLOCK_INTERSECTION(i,vertex))
+           if (IS%ROW_INTERSECTION(i,vertex) < IS%LAMBDA) then
+              call increment(changefactor, IS%LAMBDA - IS%ROW_INTERSECTION(i,vertex))
            endif
         enddo
         if (IS%SUM_TOTAL < IS%SUM_IDEAL) then
@@ -97,8 +97,8 @@ subroutine randomCA_BIBD(IS, optSteps)
      else if (active(IS,i,j)) then
         do vertex=1,IS%VERTICES
            if(vertex==i) cycle
-           if (IS%BLOCK_INTERSECTION(i,vertex) > IS%LAMBDA) then
-              call increment(changefactor, IS%BLOCK_INTERSECTION(i,vertex) - IS%LAMBDA)
+           if (IS%ROW_INTERSECTION(i,vertex) > IS%LAMBDA) then
+              call increment(changefactor, IS%ROW_INTERSECTION(i,vertex) - IS%LAMBDA)
            endif
         enddo
         if (IS%SUM_TOTAL > IS%SUM_IDEAL) then

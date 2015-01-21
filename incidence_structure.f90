@@ -6,13 +6,15 @@ module incidence_structure
 
   type IncidenceStructure
      integer, dimension(:,:), allocatable:: INCIDENCES ! incidences
-     integer, dimension(:,:), allocatable:: BLOCK_INTERSECTION ! dp
+     integer, dimension(:,:), allocatable:: ROW_INTERSECTION ! dp
+     integer, dimension(:,:), allocatable:: COL_INTERSECTION ! dp
      integer, dimension(:), allocatable:: SUM_IN_ROW ! SUM_IN_ROW
      integer, dimension(:), allocatable:: SUM_IN_COL ! SUM_IN_COL
      integer VERTICES !v
      integer INCIDENCES_PER_VERTICE!k
      integer BLOCKS !b
      integer LAMBDA!lmbd
+     integer LAMBDA_COMPLEMENT!lambda of the complement 2-BIBD
      
      ! Heuristic helper vals
      integer VERTICES_PER_BLOCK!r
@@ -38,7 +40,7 @@ contains
 
     IS%VERTICES=v
     IS%INCIDENCES_PER_VERTICE=k
-    IS%LAMBDA=lmbd
+    IS%LAMBDA=lmbd    
 
     ! Test for neccessary BIBD conditions
     r_r=IS%LAMBDA*(IS%VERTICES-1)/(IS%INCIDENCES_PER_VERTICE-1)
@@ -54,12 +56,14 @@ contains
     endif
 
     allocate(IS%incidences(1:IS%VERTICES,1:IS%BLOCKS))
-    allocate(IS%BLOCK_INTERSECTION(1:IS%VERTICES,1:IS%VERTICES))
+    allocate(IS%ROW_INTERSECTION(1:IS%VERTICES,1:IS%VERTICES))
+    allocate(IS%COL_INTERSECTION(1:IS%BLOCKS,1:IS%BLOCKS))
     allocate(IS%SUM_IN_ROW(1:IS%VERTICES))
     allocate(IS%SUM_IN_COL(1:IS%BLOCKS))
 
     IS%incidences(1:IS%VERTICES,1:IS%BLOCKS)=0
-    IS%BLOCK_INTERSECTION(1:IS%VERTICES,1:IS%VERTICES)=0
+    IS%ROW_INTERSECTION(1:IS%VERTICES,1:IS%VERTICES)=0
+    IS%COL_INTERSECTION(1:IS%BLOCKS,1:IS%BLOCKS)=0
     IS%SUM_IN_ROW(1:IS%VERTICES)=0
     IS%SUM_IN_COL(1:IS%BLOCKS)=0
     IS%SUM_TOTAL=0
@@ -71,6 +75,7 @@ contains
     IS%SUM_TOTAL_NOT_IDEAL = (IS%SUM_TOTAL /= IS%SUM_IDEAL)
 
     IS%VERTICES_X_BLOCKS = IS%VERTICES * IS%BLOCKS
+    IS%LAMBDA_COMPLEMENT=IS%LAMBDA + IS%BLOCKS - 2 * IS%VERTICES_PER_BLOCK
   end subroutine construct
 
   subroutine updateCache(IS)
@@ -88,7 +93,13 @@ contains
     
     do i=1,IS%VERTICES
        do j=1,IS%VERTICES
-          IS%BLOCK_INTERSECTION(i,j)=dot_product(IS%incidences(i,:), IS%incidences(j,:))
+          IS%ROW_INTERSECTION(i,j)=dot_product(IS%incidences(i,:), IS%incidences(j,:))
+       enddo
+    enddo
+
+    do i=1,IS%BLOCKS
+       do j=1,IS%BLOCKS
+          IS%COL_INTERSECTION(i,j)=dot_product(IS%incidences(:,i), IS%incidences(:,j))
        enddo
     enddo
 
@@ -102,7 +113,8 @@ contains
   subroutine deconstruct(IS)
     type(IncidenceStructure) IS
     deallocate(IS%incidences)
-    deallocate(IS%BLOCK_INTERSECTION)
+    deallocate(IS%ROW_INTERSECTION)
+    deallocate(IS%COL_INTERSECTION)
     deallocate(IS%SUM_IN_ROW)
     deallocate(IS%SUM_IN_COL)
   end subroutine deconstruct
@@ -138,33 +150,51 @@ contains
 
     type(IncidenceStructure) IS
     integer row,col
-    integer otherRow,newVal
+    integer otherRow,otherCol,newVal
     !!write (*,*) "DEBUG: flip"
     newVal=abs(IS%incidences(row,col)-1)
     IS%incidences(row,col)=newVal
     if (newVal==0) then
-       IS%SUM_TOTAL=IS%SUM_TOTAL-1
+       call decrement(IS%SUM_TOTAL,1)
 
-       IS%SUM_IN_ROW(row)=IS%SUM_IN_ROW(row)-1
-       IS%SUM_IN_COL(col)=IS%SUM_IN_COL(col)-1
-       IS%BLOCK_INTERSECTION(row,row)=IS%BLOCK_INTERSECTION(row,row)-1
+       call decrement(IS%SUM_IN_ROW(row),1)
+       call decrement(IS%SUM_IN_COL(col),1)
+       call decrement(IS%ROW_INTERSECTION(row,row),1)
+       call decrement(IS%COL_INTERSECTION(col,col),1)
     endif
     if (newVal==1) then
-       IS%SUM_TOTAL=IS%SUM_TOTAL+1
-       IS%SUM_IN_ROW(row)=IS%SUM_IN_ROW(row)+1
-       IS%SUM_IN_COL(col)=IS%SUM_IN_COL(col)+1
-       IS%BLOCK_INTERSECTION(row,row)=IS%BLOCK_INTERSECTION(row,row)+1
+       call increment(IS%SUM_TOTAL,1)
+       call increment(IS%SUM_IN_ROW(row),1)
+       call increment(IS%SUM_IN_COL(col),1)
+       call increment(IS%ROW_INTERSECTION(row,row),1)
+       call increment(IS%COL_INTERSECTION(col,col),1)
     endif
 
     do otherRow=1,IS%VERTICES
        if(otherRow==row) cycle
-       if(newVal==0 .and. IS%incidences(otherRow,col)==1) then
-          IS%BLOCK_INTERSECTION(otherRow,row)=IS%BLOCK_INTERSECTION(otherRow,row)-1
-          IS%BLOCK_INTERSECTION(row,otherRow)=IS%BLOCK_INTERSECTION(row,otherRow)-1
+       if(IS%incidences(otherRow,col)==1) then 
+          if(newVal==0) then
+             call decrement(IS%ROW_INTERSECTION(otherRow,row),1)
+             call decrement(IS%ROW_INTERSECTION(row,otherRow),1)          
+          endif
+          if(newVal==1) then
+             call increment(IS%ROW_INTERSECTION(otherRow,row),1)
+             call increment(IS%ROW_INTERSECTION(row,otherRow),1)
+          endif
        endif
-       if(newVal==1 .and. IS%incidences(otherRow,col)==1) then
-          IS%BLOCK_INTERSECTION(otherRow,row)=IS%BLOCK_INTERSECTION(otherRow,row)+1
-          IS%BLOCK_INTERSECTION(row,otherRow)=IS%BLOCK_INTERSECTION(row,otherRow)+1
+    enddo
+
+    do otherCol=1,IS%BLOCKS
+       if(otherCol==col) cycle
+       if(IS%incidences(row,otherCol)==1) then
+          if(newVal==0) then
+             call decrement(IS%COL_INTERSECTION(otherCol,col),1)
+             call decrement(IS%COL_INTERSECTION(col,otherCol),1)          
+          endif
+          if(newVal==1) then
+             call increment(IS%COL_INTERSECTION(otherCol,col),1)
+             call increment(IS%COL_INTERSECTION(col,otherCol),1)
+          endif
        endif
     enddo
   end subroutine flip
@@ -206,7 +236,7 @@ contains
     ! this is not a BIBD
     do i=1,(IS%VERTICES-1)
        do j=(i+1),IS%VERTICES
-          if (IS%BLOCK_INTERSECTION(i,j)/=IS%LAMBDA) then
+          if (IS%ROW_INTERSECTION(i,j)/=IS%LAMBDA) then
              isBIBD=.False.
              return
           endif
