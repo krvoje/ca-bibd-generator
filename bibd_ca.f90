@@ -51,7 +51,9 @@ subroutine randomCA_BIBD(IS, optSteps)
   type(IncidenceStructure) IS
   integer optSteps
 
-  integer changeFactor, maxChangeFactor, i, j, vertex, blok
+  integer changeFactor, maxChangeFactor
+  integer row, col
+  integer vertex, blok
   logical bibdFound, nOpt
 
   integer nothingChanged
@@ -68,23 +70,23 @@ subroutine randomCA_BIBD(IS, optSteps)
 
      changeFactor=0
 
-     i=randomInt(IS%VERTICES)+1
-     j=randomInt(IS%BLOCKS)+1
+     row=randomInt(IS%VERTICES)+1
+     col=randomInt(IS%BLOCKS)+1
         
-     if (dormant(IS,i,j)) then
+     if (dormant(IS,row,col)) then
         do vertex=1,IS%VERTICES
-           if(vertex==i) cycle
-           if (IS%ROW_INTERSECTION(i,vertex) < IS%LAMBDA) then
-              call increment(changefactor, IS%LAMBDA - IS%ROW_INTERSECTION(i,vertex))
+           if(vertex==row) cycle
+           if (IS%ROW_INTERSECTION(row,vertex) < IS%LAMBDA) then
+              call increment(changefactor, IS%LAMBDA - IS%ROW_INTERSECTION(row,vertex))
            endif
         enddo
         if (IS%SUM_TOTAL < IS%SUM_IDEAL) then
            call increment(changefactor, IS%SUM_IDEAL - IS%SUM_TOTAL)
         endif
-        if (IS%SUM_IN_COL(j)<IS%INCIDENCES_PER_VERTICE) then
+        if (IS%SUM_IN_COL(col)<IS%INCIDENCES_PER_VERTICE) then
            call increment(changefactor, IS%INCIDENCES_PER_VERTICE)
         endif        
-        if (IS%SUM_IN_ROW(i)<IS%VERTICES_PER_BLOCK) then
+        if (IS%SUM_IN_ROW(row)<IS%VERTICES_PER_BLOCK) then
            call increment(changefactor, IS%VERTICES_PER_BLOCK)
         endif
         maxChangeFactor = IS%LAMBDA*(IS%VERTICES-1) &
@@ -92,22 +94,22 @@ subroutine randomCA_BIBD(IS, optSteps)
              + IS%INCIDENCES_PER_VERTICE &
              + IS%VERTICES_PER_BLOCK
         if(randomInt(maxChangeFactor) < changeFactor) then
-           call flip(IS,i,j)
+           call flip(IS,row,col)
         endif
-     else if (active(IS,i,j)) then
+     else if (active(IS,row,col)) then
         do vertex=1,IS%VERTICES
-           if(vertex==i) cycle
-           if (IS%ROW_INTERSECTION(i,vertex) > IS%LAMBDA) then
-              call increment(changefactor, IS%ROW_INTERSECTION(i,vertex) - IS%LAMBDA)
+           if(vertex==row) cycle
+           if (IS%ROW_INTERSECTION(row,vertex) > IS%LAMBDA) then
+              call increment(changefactor, IS%ROW_INTERSECTION(row,vertex) - IS%LAMBDA)
            endif
         enddo
         if (IS%SUM_TOTAL > IS%SUM_IDEAL) then
            call increment(changefactor, IS%SUM_TOTAL - IS%SUM_IDEAL)
         endif
-        if (IS%SUM_IN_COL(j)>IS%INCIDENCES_PER_VERTICE) then
+        if (IS%SUM_IN_COL(col)>IS%INCIDENCES_PER_VERTICE) then
            call increment(changefactor, IS%BLOCKS)
         endif
-        if (IS%SUM_IN_ROW(i)>IS%VERTICES_PER_BLOCK) then
+        if (IS%SUM_IN_ROW(row)>IS%VERTICES_PER_BLOCK) then
            call increment(changefactor, IS%VERTICES)
         endif
         maxChangeFactor = IS%BLOCKS*(IS%VERTICES-1) &
@@ -115,7 +117,7 @@ subroutine randomCA_BIBD(IS, optSteps)
              + IS%BLOCKS &
              + IS%VERTICES
         if(randomInt(maxChangeFactor) < changeFactor) then
-           call flip(IS,i,j)
+           call flip(IS,row,col)
         endif
      else
         print *, "Severe fatal error"
