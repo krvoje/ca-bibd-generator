@@ -34,6 +34,21 @@ program bibd_ca
   call seedRandomGenerator()
   call construct(IS,v,k,lmbd)
 
+  ! IS%incidences(:,1)=(/1,1,1,0,0,0,0,0,0/)
+  ! IS%incidences(:,2)=(/0,0,0,1,1,1,0,0,0/)
+  ! IS%incidences(:,3)=(/0,0,0,0,0,0,1,1,1/)
+  ! IS%incidences(:,4)=(/1,0,0,1,0,0,1,0,0/)
+  ! IS%incidences(:,5)=(/0,1,0,0,1,0,0,1,0/)
+  ! IS%incidences(:,6)=(/0,0,1,0,0,1,0,0,1/)
+  ! IS%incidences(:,7)=(/1,0,0,0,1,0,0,0,1/)
+  ! IS%incidences(:,8)=(/0,1,0,0,0,1,1,0,0/)
+  ! IS%incidences(:,9)=(/0,0,1,1,0,0,0,1,0/)
+  ! IS%incidences(:,10)=(/1,0,0,0,0,1,0,1,0/)
+  ! IS%incidences(:,11)=(/0,1,0,1,0,0,0,0,1/)
+  ! IS%incidences(:,12)=(/0,0,1,0,1,0,1,0,0/)
+  ! call updateCache(IS)
+  ! call writeMatrix(IS)
+
   call randomCA_BIBD(IS,optSteps)
   print *, "An incidence matrix for the given parameters found:"
   call writeMatrix(IS)  
@@ -63,9 +78,13 @@ subroutine randomCA_BIBD(IS, optSteps)
   bibdFound=.false.
   ! Rince and repeat until BIBD
   do while(bibdFound .eqv. .false.)
-     if (isBIBD(IS) .or. nOpt(optSteps, optSteps, IS)) then
+     if (isBIBD(IS)) then
         bibdFound=.true.
         return
+     endif     
+     if(nOpt(optSteps, optSteps, IS)) then
+        bibdFound=.true.
+        return        
      endif
 
      changeFactor=0
@@ -83,16 +102,16 @@ subroutine randomCA_BIBD(IS, optSteps)
         if (IS%SUM_TOTAL < IS%SUM_IDEAL) then
            call increment(changefactor, IS%SUM_IDEAL - IS%SUM_TOTAL)
         endif
-        if (IS%SUM_IN_COL(col)<IS%INCIDENCES_PER_VERTICE) then
-           call increment(changefactor, IS%INCIDENCES_PER_VERTICE)
+        if (IS%SUM_IN_COL(col)<IS%k) then
+           call increment(changefactor, IS%k)
         endif        
-        if (IS%SUM_IN_ROW(row)<IS%VERTICES_PER_BLOCK) then
-           call increment(changefactor, IS%VERTICES_PER_BLOCK)
+        if (IS%SUM_IN_ROW(row)<IS%r) then
+           call increment(changefactor, IS%r)
         endif
         maxChangeFactor = IS%LAMBDA*(IS%VERTICES-1) &
              + IS%SUM_IDEAL &
-             + IS%INCIDENCES_PER_VERTICE &
-             + IS%VERTICES_PER_BLOCK
+             + IS%r &
+             + IS%k
         if(randomInt(maxChangeFactor) < changeFactor) then
            call flip(IS,row,col)
         endif
@@ -106,11 +125,11 @@ subroutine randomCA_BIBD(IS, optSteps)
         if (IS%SUM_TOTAL > IS%SUM_IDEAL) then
            call increment(changefactor, IS%SUM_TOTAL - IS%SUM_IDEAL)
         endif
-        if (IS%SUM_IN_COL(col)>IS%INCIDENCES_PER_VERTICE) then
-           call increment(changefactor, IS%BLOCKS)
-        endif
-        if (IS%SUM_IN_ROW(row)>IS%VERTICES_PER_BLOCK) then
+        if (IS%SUM_IN_COL(col)>IS%k) then
            call increment(changefactor, IS%VERTICES)
+        endif
+        if (IS%SUM_IN_ROW(row)>IS%r) then
+           call increment(changefactor, IS%BLOCKS)
         endif
         maxChangeFactor = IS%BLOCKS*(IS%VERTICES-1) &
              + IS%SUM_TOTAL &
@@ -153,22 +172,22 @@ recursive logical function nOpt(n,topOpt,IS) result (successfulOpt)
   sumTotal_gt = IS%SUM_TOTAL>=IS%SUM_IDEAL + n
     
   do i=1,IS%VERTICES
-     sumInRow_lt=IS%SUM_IN_ROW(i)<=IS%VERTICES_PER_BLOCK-n
-     sumInRow_gt=IS%SUM_IN_ROW(i)>=IS%VERTICES_PER_BLOCK+n
+     sumInRow_lt=IS%SUM_IN_ROW(i)<=IS%r-n
+     sumInRow_gt=IS%SUM_IN_ROW(i)>=IS%r+n
      do j=1,IS%BLOCKS
         if(&
              (dormant(IS,i,j) &
              .and. sumTotal_lt &
-             .and. (sumInRow_lt .or. IS%SUM_IN_COL(j)<=IS%INCIDENCES_PER_VERTICE-n) &
+             .and. (sumInRow_lt .or. IS%SUM_IN_COL(j)<=IS%k-n) &
              )&
              .or.&
              (active(IS,i,j) &
              .and. sumTotal_gt &
-             .and. (sumInRow_gt .or. IS%SUM_IN_COL(j)>=IS%INCIDENCES_PER_VERTICE+n))&
+             .and. (sumInRow_gt .or. IS%SUM_IN_COL(j)>=IS%k+n))&
              ) then
            call flip(IS,i,j)
-           sumInRow_lt=IS%SUM_IN_ROW(i)<=IS%VERTICES_PER_BLOCK-n
-           sumInRow_gt=IS%SUM_IN_ROW(i)>=IS%VERTICES_PER_BLOCK+n
+           sumInRow_lt=IS%SUM_IN_ROW(i)<=IS%r-n
+           sumInRow_gt=IS%SUM_IN_ROW(i)>=IS%r+n
            if(n == 1) then
               if (isBIBD(IS)) then
                  print *, topOpt, "-opt yielded a BIBD"
@@ -180,8 +199,8 @@ recursive logical function nOpt(n,topOpt,IS) result (successfulOpt)
               return
            else
               call flip(IS,i,j)
-              sumInRow_lt=IS%SUM_IN_ROW(i)<=IS%VERTICES_PER_BLOCK-n
-              sumInRow_gt=IS%SUM_IN_ROW(i)>=IS%VERTICES_PER_BLOCK+n
+              sumInRow_lt=IS%SUM_IN_ROW(i)<=IS%r-n
+              sumInRow_gt=IS%SUM_IN_ROW(i)>=IS%r+n
               successfulOpt=.false.
               return
            endif

@@ -11,13 +11,13 @@ module incidence_structure
      integer, dimension(:), allocatable:: SUM_IN_ROW ! SUM_IN_ROW
      integer, dimension(:), allocatable:: SUM_IN_COL ! SUM_IN_COL
      integer VERTICES !v
-     integer INCIDENCES_PER_VERTICE!k
+     integer r!r
+     integer k!k
      integer BLOCKS !b
      integer LAMBDA!lmbd
      integer LAMBDA_COMPLEMENT!lambda of the complement 2-BIBD
      
      ! Heuristic helper vals
-     integer VERTICES_PER_BLOCK!r
      integer SUM_TOTAL     
      integer VERTICES_X_BLOCKS
      integer SUM_IDEAL ! Should be VERTICES_PER_BLOC*VERTICES
@@ -39,20 +39,20 @@ contains
     integer i,j
 
     IS%VERTICES=v
-    IS%INCIDENCES_PER_VERTICE=k
-    IS%LAMBDA=lmbd    
+    IS%k=k
+    IS%LAMBDA=lmbd
 
     ! Test for neccessary BIBD conditions
-    r_r=IS%LAMBDA*(IS%VERTICES-1)/(IS%INCIDENCES_PER_VERTICE-1)
-    b_r=r_r*IS%VERTICES/IS%INCIDENCES_PER_VERTICE
+    r_r=IS%LAMBDA*(IS%VERTICES-1)/(IS%k-1)
+    b_r=r_r*IS%VERTICES/IS%k
 
     if (r_r/=int(r_r).or.b_r/=int(b_r)) then
        write (*,*) "Invalid BIBD parameters."       
        stop
     else
-       IS%VERTICES_PER_BLOCK=int(r_r)
+       IS%r=int(r_r)
        IS%BLOCKS=int(b_r)
-       print *, "v,k,λ,b,r=", IS%VERTICES,IS%INCIDENCES_PER_VERTICE,IS%LAMBDA,IS%BLOCKS,IS%VERTICES_PER_BLOCK
+       print *, "v,k,λ,b,r=", IS%VERTICES,IS%k,IS%LAMBDA,IS%BLOCKS,IS%r
     endif
 
     allocate(IS%incidences(1:IS%VERTICES,1:IS%BLOCKS))
@@ -68,14 +68,14 @@ contains
     IS%SUM_IN_COL(1:IS%BLOCKS)=0
     IS%SUM_TOTAL=0
 
-    IS%SUM_IDEAL=IS%VERTICES_PER_BLOCK*IS%VERTICES
+    IS%SUM_IDEAL=IS%k*IS%BLOCKS
     
     IS%SUM_TOTAL_LESS_THAN_IDEAL=IS%SUM_TOTAL<=IS%SUM_IDEAL
     IS%SUM_TOTAL_MORE_THAN_IDEAL=IS%SUM_TOTAL>=IS%SUM_IDEAL
     IS%SUM_TOTAL_NOT_IDEAL = (IS%SUM_TOTAL /= IS%SUM_IDEAL)
 
     IS%VERTICES_X_BLOCKS = IS%VERTICES * IS%BLOCKS
-    IS%LAMBDA_COMPLEMENT=IS%LAMBDA + IS%BLOCKS - 2 * IS%VERTICES_PER_BLOCK
+    IS%LAMBDA_COMPLEMENT=IS%LAMBDA + IS%BLOCKS - 2 * IS%k
   end subroutine construct
 
   subroutine updateCache(IS)
@@ -88,7 +88,7 @@ contains
     enddo
 
     do j=1,IS%BLOCKS
-       IS%SUM_IN_COL(i)=sum(IS%incidences(:,j))
+       IS%SUM_IN_COL(j)=sum(IS%incidences(:,j))
     enddo
     
     do i=1,IS%VERTICES
@@ -103,7 +103,7 @@ contains
        enddo
     enddo
 
-    IS%SUM_TOTAL=sum(IS%SUM_IN_ROW(:))  
+    IS%SUM_TOTAL=sum(IS%SUM_IN_ROW(1:IS%VERTICES))
     
     IS%SUM_TOTAL_LESS_THAN_IDEAL = IS%SUM_TOTAL <= IS%SUM_IDEAL
     IS%SUM_TOTAL_MORE_THAN_IDEAL = IS%SUM_TOTAL >= IS%SUM_IDEAL
@@ -209,25 +209,28 @@ contains
 
     integer i,j
     
-    !call writeMatrix(IS)
+    call writeMatrix(IS)
 
     if(IS%SUM_TOTAL /= IS%SUM_IDEAL) then
        isBIBD=.False.
+       !print *, "Sum is non-ideal", is%sum_total, is%sum_ideal
        return
     endif
     
     ! If the incidence matrix has a row with sum non-equal to r, this is not a BIBD
     do i=1,IS%VERTICES
-       if(IS%SUM_IN_ROW(i)/=IS%INCIDENCES_PER_VERTICE) then
+       if(IS%SUM_IN_ROW(i)/=IS%r) then
           isBIBD=.False.
+          !print *, "Sum in row is non-ideal", is%sum_in_row(i), is%r
           return
        endif
     enddo
 
     ! If the incidence matrix has a row with sum non-equal to k, this is not a BIBD
     do i=1,IS%BLOCKS
-       if(IS%SUM_IN_COL(i)/=IS%VERTICES_PER_BLOCK) then
+       if(IS%SUM_IN_COL(i)/=IS%k) then
           isBIBD=.False.
+          !print *, "Sum in col is non-ideal", is%sum_in_col(i), is%k
           return
        endif
     enddo
@@ -238,6 +241,7 @@ contains
        do j=(i+1),IS%VERTICES
           if (IS%ROW_INTERSECTION(i,j)/=IS%LAMBDA) then
              isBIBD=.False.
+             !print *, "Intersection is non-lambda", is%row_intersection(i,j)
              return
           endif
        enddo
