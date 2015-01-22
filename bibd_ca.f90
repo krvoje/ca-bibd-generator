@@ -7,7 +7,7 @@ program bibd_ca
   
   implicit none
   
-  type(IncidenceStructure) IS
+  type(IncidenceStructure) is
   integer optSteps
   integer v,k,lmbd
   integer i,j
@@ -32,38 +32,23 @@ program bibd_ca
   endif
 
   call seedRandomGenerator()
-  call construct(IS,v,k,lmbd)
+  call construct(is,v,k,lmbd)
 
-  ! IS%incidences(:,1)=(/1,1,1,0,0,0,0,0,0/)
-  ! IS%incidences(:,2)=(/0,0,0,1,1,1,0,0,0/)
-  ! IS%incidences(:,3)=(/0,0,0,0,0,0,1,1,1/)
-  ! IS%incidences(:,4)=(/1,0,0,1,0,0,1,0,0/)
-  ! IS%incidences(:,5)=(/0,1,0,0,1,0,0,1,0/)
-  ! IS%incidences(:,6)=(/0,0,1,0,0,1,0,0,1/)
-  ! IS%incidences(:,7)=(/1,0,0,0,1,0,0,0,1/)
-  ! IS%incidences(:,8)=(/0,1,0,0,0,1,1,0,0/)
-  ! IS%incidences(:,9)=(/0,0,1,1,0,0,0,1,0/)
-  ! IS%incidences(:,10)=(/1,0,0,0,0,1,0,1,0/)
-  ! IS%incidences(:,11)=(/0,1,0,1,0,0,0,0,1/)
-  ! IS%incidences(:,12)=(/0,0,1,0,1,0,1,0,0/)
-  ! call updateCache(IS)
-  ! call writeMatrix(IS)
-
-  call randomCA_BIBD(IS,optSteps)
+  call randomCA_BIBD(is,optSteps)
   print *, "An incidence matrix for the given parameters found:"
-  call writeMatrix(IS)  
+  call writeMatrix(is)  
 
   ! Memory cleanup
-  call deconstruct(IS)
+  call deconstruct(is)
 end program bibd_ca
 
-subroutine randomCA_BIBD(IS, optSteps)
+subroutine randomCA_BIBD(is, optSteps)
   use mtmod
   use incidence_structure
   
   implicit none
 
-  type(IncidenceStructure) IS
+  type(IncidenceStructure) is
   integer optSteps
 
   integer changeFactor, maxChangeFactor
@@ -78,65 +63,65 @@ subroutine randomCA_BIBD(IS, optSteps)
   bibdFound=.false.
   ! Rince and repeat until BIBD
   do while(bibdFound .eqv. .false.)
-     if (isBIBD(IS)) then
+     if (isBIBD(is)) then
         bibdFound=.true.
         return
      endif     
-     if(nOpt(optSteps, optSteps, IS)) then
+     if(nOpt(optSteps, optSteps, is)) then
         bibdFound=.true.
         return        
      endif
 
      changeFactor=0
 
-     row=randomInt(IS%VERTICES)+1
-     col=randomInt(IS%BLOCKS)+1
+     row=randomInt(is%v)+1
+     col=randomInt(is%b)+1
         
-     if (dormant(IS,row,col)) then
-        do vertex=1,IS%VERTICES
+     if (dormant(is,row,col)) then
+        do vertex=1,is%v
            if(vertex==row) cycle
-           if (IS%ROW_INTERSECTION(row,vertex) < IS%LAMBDA) then
-              call increment(changefactor, IS%LAMBDA - IS%ROW_INTERSECTION(row,vertex))
+           if (is%ROW_INTERSECTION(row,vertex) < is%LAMBDA) then
+              call increment(changefactor, is%LAMBDA - is%ROW_INTERSECTION(row,vertex))
            endif
         enddo
-        if (IS%SUM_TOTAL < IS%SUM_IDEAL) then
-           call increment(changefactor, IS%SUM_IDEAL - IS%SUM_TOTAL)
+        if (is%SUM_TOTAL < is%SUM_IDEAL) then
+           call increment(changefactor, is%SUM_IDEAL - is%SUM_TOTAL)
         endif
-        if (IS%SUM_IN_COL(col)<IS%k) then
-           call increment(changefactor, IS%k)
+        if (is%SUM_IN_COL(col)<is%k) then
+           call increment(changefactor, is%k)
         endif        
-        if (IS%SUM_IN_ROW(row)<IS%r) then
-           call increment(changefactor, IS%r)
+        if (is%SUM_IN_ROW(row)<is%r) then
+           call increment(changefactor, is%r)
         endif
-        maxChangeFactor = IS%LAMBDA*(IS%VERTICES-1) &
-             + IS%SUM_IDEAL &
-             + IS%r &
-             + IS%k
+        maxChangeFactor = is%LAMBDA*(is%v-1) &
+             + is%SUM_IDEAL &
+             + is%r &
+             + is%k
         if(randomInt(maxChangeFactor) < changeFactor) then
-           call flip(IS,row,col)
+           call flip(is,row,col)
         endif
-     else if (active(IS,row,col)) then
-        do vertex=1,IS%VERTICES
+     else if (active(is,row,col)) then
+        do vertex=1,is%v
            if(vertex==row) cycle
-           if (IS%ROW_INTERSECTION(row,vertex) > IS%LAMBDA) then
-              call increment(changefactor, IS%ROW_INTERSECTION(row,vertex) - IS%LAMBDA)
+           if (is%ROW_INTERSECTION(row,vertex) > is%LAMBDA) then
+              call increment(changefactor, is%ROW_INTERSECTION(row,vertex) - is%LAMBDA)
            endif
         enddo
-        if (IS%SUM_TOTAL > IS%SUM_IDEAL) then
-           call increment(changefactor, IS%SUM_TOTAL - IS%SUM_IDEAL)
+        if (is%SUM_TOTAL > is%SUM_IDEAL) then
+           call increment(changefactor, is%SUM_TOTAL - is%SUM_IDEAL)
         endif
-        if (IS%SUM_IN_COL(col)>IS%k) then
-           call increment(changefactor, IS%VERTICES)
+        if (is%SUM_IN_COL(col)>is%k) then
+           call increment(changefactor, is%v)
         endif
-        if (IS%SUM_IN_ROW(row)>IS%r) then
-           call increment(changefactor, IS%BLOCKS)
+        if (is%SUM_IN_ROW(row)>is%r) then
+           call increment(changefactor, is%b)
         endif
-        maxChangeFactor = IS%BLOCKS*(IS%VERTICES-1) &
-             + IS%SUM_TOTAL &
-             + IS%BLOCKS &
-             + IS%VERTICES
+        maxChangeFactor = is%b*(is%v-1) &
+             + is%SUM_TOTAL &
+             + is%b &
+             + is%v
         if(randomInt(maxChangeFactor) < changeFactor) then
-           call flip(IS,row,col)
+           call flip(is,row,col)
         endif
      else
         print *, "Severe fatal error"
@@ -145,11 +130,11 @@ subroutine randomCA_BIBD(IS, optSteps)
   enddo
 end subroutine randomCA_BIBD
 
-recursive logical function nOpt(n,topOpt,IS) result (successfulOpt)
+recursive logical function nOpt(n,topOpt,is) result (successfulOpt)
   use incidence_structure
   implicit none
 
-  type(IncidenceStructure) IS
+  type(IncidenceStructure) is
   integer n,i,j,topOpt  
 
   logical sumTotal_lt, sumTotal_gt
@@ -160,47 +145,55 @@ recursive logical function nOpt(n,topOpt,IS) result (successfulOpt)
      successfulOpt=.false.
      return
   endif
-  
-  if (abs(IS%SUM_IDEAL - IS%SUM_TOTAL)/=n) then
-     successfulOpt = nOpt(n-1,n-1,IS)
+
+  if (abs(is%heuristic_distance)>is%max_hd_coef * n) then
+     successfulOpt=.false.
      return
   endif
 
-  !call writeMatrix(IS)
+  ! print *, is%heuristic_distance, is%heuristic_distance/is%max_hd_coef
+  ! call writeMatrix(is)
+  
+  if (abs(is%SUM_IDEAL - is%SUM_TOTAL)/=n) then
+     successfulOpt = nOpt(n-1,n-1,is)
+     return
+  endif
+  
+  !call writeMatrix(is)
 
-  sumTotal_lt = IS%SUM_TOTAL<=IS%SUM_IDEAL - n
-  sumTotal_gt = IS%SUM_TOTAL>=IS%SUM_IDEAL + n
+  sumTotal_lt = is%SUM_TOTAL<=is%SUM_IDEAL - n
+  sumTotal_gt = is%SUM_TOTAL>=is%SUM_IDEAL + n
     
-  do i=1,IS%VERTICES
-     sumInRow_lt=IS%SUM_IN_ROW(i)<=IS%r-n
-     sumInRow_gt=IS%SUM_IN_ROW(i)>=IS%r+n
-     do j=1,IS%BLOCKS
+  do i=1,is%v
+     sumInRow_lt=is%SUM_IN_ROW(i)<=is%r-n
+     sumInRow_gt=is%SUM_IN_ROW(i)>=is%r+n
+     do j=1,is%b
         if(&
-             (dormant(IS,i,j) &
+             (dormant(is,i,j) &
              .and. sumTotal_lt &
-             .and. (sumInRow_lt .or. IS%SUM_IN_COL(j)<=IS%k-n) &
+             .and. (sumInRow_lt .or. is%SUM_IN_COL(j)<=is%k-n) &
              )&
              .or.&
-             (active(IS,i,j) &
+             (active(is,i,j) &
              .and. sumTotal_gt &
-             .and. (sumInRow_gt .or. IS%SUM_IN_COL(j)>=IS%k+n))&
+             .and. (sumInRow_gt .or. is%SUM_IN_COL(j)>=is%k+n))&
              ) then
-           call flip(IS,i,j)
-           sumInRow_lt=IS%SUM_IN_ROW(i)<=IS%r-n
-           sumInRow_gt=IS%SUM_IN_ROW(i)>=IS%r+n
+           call flip(is,i,j)
+           sumInRow_lt=is%SUM_IN_ROW(i)<=is%r-n
+           sumInRow_gt=is%SUM_IN_ROW(i)>=is%r+n
            if(n == 1) then
-              if (isBIBD(IS)) then
+              if (isBIBD(is)) then
                  print *, topOpt, "-opt yielded a BIBD"
                  successfulOpt=.true.
                  return
               endif
-           else if(nOpt(n-1,topOpt,IS)) then
+           else if(nOpt(n-1,topOpt,is)) then
               successfulOpt=.true.
               return
            else
-              call flip(IS,i,j)
-              sumInRow_lt=IS%SUM_IN_ROW(i)<=IS%r-n
-              sumInRow_gt=IS%SUM_IN_ROW(i)>=IS%r+n
+              call flip(is,i,j)
+              sumInRow_lt=is%SUM_IN_ROW(i)<=is%r-n
+              sumInRow_gt=is%SUM_IN_ROW(i)>=is%r+n
               successfulOpt=.false.
               return
            endif

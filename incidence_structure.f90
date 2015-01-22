@@ -7,19 +7,16 @@ module incidence_structure
   type IncidenceStructure
      integer, dimension(:,:), allocatable:: INCIDENCES ! incidences
      integer, dimension(:,:), allocatable:: ROW_INTERSECTION ! dp
-     integer, dimension(:,:), allocatable:: COL_INTERSECTION ! dp
      integer, dimension(:), allocatable:: SUM_IN_ROW ! SUM_IN_ROW
      integer, dimension(:), allocatable:: SUM_IN_COL ! SUM_IN_COL
-     integer VERTICES !v
+     integer v !v
      integer r!r
      integer k!k
-     integer BLOCKS !b
+     integer b !b
      integer LAMBDA!lmbd
-     integer LAMBDA_COMPLEMENT!lambda of the complement 2-BIBD
      
      ! Heuristic helper vals
      integer SUM_TOTAL     
-     integer VERTICES_X_BLOCKS
      integer SUM_IDEAL ! Should be VERTICES_PER_BLOC*VERTICES
      logical SUM_TOTAL_LESS_THAN_IDEAL
      logical SUM_TOTAL_MORE_THAN_IDEAL
@@ -28,6 +25,9 @@ module incidence_structure
      integer MAX_CHANGE_FACTOR
      integer MAX_CHANGE_FACTOR_DORMANT
      integer MAX_CHANGE_FACTOR_ACTIVE
+
+     integer heuristic_distance
+     integer max_hd_coef
   end type IncidenceStructure
 
 contains
@@ -38,44 +38,41 @@ contains
     real r_r, b_r
     integer i,j
 
-    IS%VERTICES=v
+    IS%v=v
     IS%k=k
     IS%LAMBDA=lmbd
 
     ! Test for neccessary BIBD conditions
-    r_r=IS%LAMBDA*(IS%VERTICES-1)/(IS%k-1)
-    b_r=r_r*IS%VERTICES/IS%k
+    r_r=IS%LAMBDA*(IS%v-1)/(IS%k-1)
+    b_r=r_r*IS%v/IS%k
 
     if (r_r/=int(r_r).or.b_r/=int(b_r)) then
        write (*,*) "Invalid BIBD parameters."       
        stop
     else
        IS%r=int(r_r)
-       IS%BLOCKS=int(b_r)
-       print *, "v,k,λ,b,r=", IS%VERTICES,IS%k,IS%LAMBDA,IS%BLOCKS,IS%r
+       IS%b=int(b_r)
+       print *, "v,k,λ,b,r=", IS%v,IS%k,IS%LAMBDA,IS%b,IS%r
     endif
 
-    allocate(IS%incidences(1:IS%VERTICES,1:IS%BLOCKS))
-    allocate(IS%ROW_INTERSECTION(1:IS%VERTICES,1:IS%VERTICES))
-    allocate(IS%COL_INTERSECTION(1:IS%BLOCKS,1:IS%BLOCKS))
-    allocate(IS%SUM_IN_ROW(1:IS%VERTICES))
-    allocate(IS%SUM_IN_COL(1:IS%BLOCKS))
+    allocate(IS%incidences(1:IS%v,1:IS%b))
+    allocate(IS%ROW_INTERSECTION(1:IS%v,1:IS%v))
+    allocate(IS%SUM_IN_ROW(1:IS%v))
+    allocate(IS%SUM_IN_COL(1:IS%b))
 
-    IS%incidences(1:IS%VERTICES,1:IS%BLOCKS)=0
-    IS%ROW_INTERSECTION(1:IS%VERTICES,1:IS%VERTICES)=0
-    IS%COL_INTERSECTION(1:IS%BLOCKS,1:IS%BLOCKS)=0
-    IS%SUM_IN_ROW(1:IS%VERTICES)=0
-    IS%SUM_IN_COL(1:IS%BLOCKS)=0
+    IS%incidences(1:IS%v,1:IS%b)=0
+    IS%ROW_INTERSECTION(1:IS%v,1:IS%v)=0
+    IS%SUM_IN_ROW(1:IS%v)=0
+    IS%SUM_IN_COL(1:IS%b)=0
     IS%SUM_TOTAL=0
 
-    IS%SUM_IDEAL=IS%k*IS%BLOCKS
+    IS%SUM_IDEAL=IS%k*IS%b
     
     IS%SUM_TOTAL_LESS_THAN_IDEAL=IS%SUM_TOTAL<=IS%SUM_IDEAL
     IS%SUM_TOTAL_MORE_THAN_IDEAL=IS%SUM_TOTAL>=IS%SUM_IDEAL
     IS%SUM_TOTAL_NOT_IDEAL = (IS%SUM_TOTAL /= IS%SUM_IDEAL)
 
-    IS%VERTICES_X_BLOCKS = IS%VERTICES * IS%BLOCKS
-    IS%LAMBDA_COMPLEMENT=IS%LAMBDA + IS%BLOCKS - 2 * IS%k
+    call updateCache(IS)
   end subroutine construct
 
   subroutine updateCache(IS)
@@ -83,38 +80,33 @@ contains
 
     integer i,j
 
-    do i=1,IS%VERTICES
+    do i=1,IS%v
        IS%SUM_IN_ROW(i)=sum(IS%incidences(i,:))
     enddo
 
-    do j=1,IS%BLOCKS
+    do j=1,IS%b
        IS%SUM_IN_COL(j)=sum(IS%incidences(:,j))
     enddo
     
-    do i=1,IS%VERTICES
-       do j=1,IS%VERTICES
+    do i=1,IS%v
+       do j=1,IS%v
           IS%ROW_INTERSECTION(i,j)=dot_product(IS%incidences(i,:), IS%incidences(j,:))
        enddo
     enddo
 
-    do i=1,IS%BLOCKS
-       do j=1,IS%BLOCKS
-          IS%COL_INTERSECTION(i,j)=dot_product(IS%incidences(:,i), IS%incidences(:,j))
-       enddo
-    enddo
-
-    IS%SUM_TOTAL=sum(IS%SUM_IN_ROW(1:IS%VERTICES))
+    IS%SUM_TOTAL=sum(IS%SUM_IN_ROW(1:IS%v))
     
     IS%SUM_TOTAL_LESS_THAN_IDEAL = IS%SUM_TOTAL <= IS%SUM_IDEAL
     IS%SUM_TOTAL_MORE_THAN_IDEAL = IS%SUM_TOTAL >= IS%SUM_IDEAL
     IS%SUM_TOTAL_NOT_IDEAL = (IS%SUM_TOTAL /= IS%SUM_IDEAL)
+
+    call calculateHeuristicDistance(IS)
   end subroutine updateCache
   
   subroutine deconstruct(IS)
     type(IncidenceStructure) IS
     deallocate(IS%incidences)
     deallocate(IS%ROW_INTERSECTION)
-    deallocate(IS%COL_INTERSECTION)
     deallocate(IS%SUM_IN_ROW)
     deallocate(IS%SUM_IN_COL)
   end subroutine deconstruct
@@ -156,26 +148,23 @@ contains
     IS%incidences(row,col)=newVal
     if (newVal==0) then
        call decrement(IS%SUM_TOTAL,1)
-
        call decrement(IS%SUM_IN_ROW(row),1)
        call decrement(IS%SUM_IN_COL(col),1)
        call decrement(IS%ROW_INTERSECTION(row,row),1)
-       call decrement(IS%COL_INTERSECTION(col,col),1)
     endif
     if (newVal==1) then
        call increment(IS%SUM_TOTAL,1)
        call increment(IS%SUM_IN_ROW(row),1)
        call increment(IS%SUM_IN_COL(col),1)
        call increment(IS%ROW_INTERSECTION(row,row),1)
-       call increment(IS%COL_INTERSECTION(col,col),1)
     endif
 
-    do otherRow=1,IS%VERTICES
+    do otherRow=1,IS%v
        if(otherRow==row) cycle
        if(IS%incidences(otherRow,col)==1) then 
           if(newVal==0) then
              call decrement(IS%ROW_INTERSECTION(otherRow,row),1)
-             call decrement(IS%ROW_INTERSECTION(row,otherRow),1)          
+             call decrement(IS%ROW_INTERSECTION(row,otherRow),1)
           endif
           if(newVal==1) then
              call increment(IS%ROW_INTERSECTION(otherRow,row),1)
@@ -184,21 +173,30 @@ contains
        endif
     enddo
 
-    do otherCol=1,IS%BLOCKS
-       if(otherCol==col) cycle
-       if(IS%incidences(row,otherCol)==1) then
-          if(newVal==0) then
-             call decrement(IS%COL_INTERSECTION(otherCol,col),1)
-             call decrement(IS%COL_INTERSECTION(col,otherCol),1)          
-          endif
-          if(newVal==1) then
-             call increment(IS%COL_INTERSECTION(otherCol,col),1)
-             call increment(IS%COL_INTERSECTION(col,otherCol),1)
-          endif
-       endif
-    enddo
+    call calculateHeuristicDistance(IS)
   end subroutine flip
 
+  subroutine calculateHeuristicDistance(IS)
+    type(IncidenceStructure) IS
+
+    integer i,j
+
+    IS%HEURISTIC_DISTANCE = (abs(is%sum_total - is%sum_ideal))
+    do i=1,IS%v
+       call increment(IS%HEURISTIC_DISTANCE, abs(IS%SUM_IN_ROW(i) - IS%r))
+    enddo
+    do i=1,IS%b
+       call increment(IS%HEURISTIC_DISTANCE, abs(IS%SUM_IN_COL(i) - IS%k))
+    enddo
+    do i=1,IS%v
+       do j=1,IS%v
+          if(i==j) cycle
+          call increment(IS%HEURISTIC_DISTANCE, abs(IS%ROW_INTERSECTION(i,j) - IS%LAMBDA))
+       enddo
+    enddo
+    IS%max_hd_coef = IS%v - 1 + 3
+  end subroutine calculateHeuristicDistance
+  
   !!***
   !! Checks if the incidence matrix with the other parameters is a BIBD
   !! Returns .True. if this is a 2-(v,k,λ) BIBD
@@ -208,9 +206,12 @@ contains
     type(IncidenceStructure) IS
 
     integer i,j
-    
-    call writeMatrix(IS)
 
+    ! if(is%heuristic_distance <= is%max_hd_coef * 5) then
+    !     print *, "hd: ", is%heuristic_distance / is%max_hd_coef
+    !     call writeMatrix(IS)
+    ! endif
+    
     if(IS%SUM_TOTAL /= IS%SUM_IDEAL) then
        isBIBD=.False.
        !print *, "Sum is non-ideal", is%sum_total, is%sum_ideal
@@ -218,7 +219,7 @@ contains
     endif
     
     ! If the incidence matrix has a row with sum non-equal to r, this is not a BIBD
-    do i=1,IS%VERTICES
+    do i=1,IS%v
        if(IS%SUM_IN_ROW(i)/=IS%r) then
           isBIBD=.False.
           !print *, "Sum in row is non-ideal", is%sum_in_row(i), is%r
@@ -227,7 +228,7 @@ contains
     enddo
 
     ! If the incidence matrix has a row with sum non-equal to k, this is not a BIBD
-    do i=1,IS%BLOCKS
+    do i=1,IS%b
        if(IS%SUM_IN_COL(i)/=IS%k) then
           isBIBD=.False.
           !print *, "Sum in col is non-ideal", is%sum_in_col(i), is%k
@@ -235,10 +236,10 @@ contains
        endif
     enddo
 
-    ! If there are two IS%BLOCKS (rows) whose intersection does not contain lambda IS%VERTICES,
+    ! If there are two IS%b (rows) whose intersection does not contain lambda IS%v,
     ! this is not a BIBD
-    do i=1,(IS%VERTICES-1)
-       do j=(i+1),IS%VERTICES
+    do i=1,(IS%v-1)
+       do j=(i+1),IS%v
           if (IS%ROW_INTERSECTION(i,j)/=IS%LAMBDA) then
              isBIBD=.False.
              !print *, "Intersection is non-lambda", is%row_intersection(i,j)
@@ -254,23 +255,23 @@ contains
 
   subroutine writeMatrix(IS)
     type(IncidenceStructure) IS
-    integer i,j
+    integer row,col
 
     write(*,*),"["
-    do j=1,IS%BLOCKS
-       do i=1,IS%VERTICES
-          write (*,"(I1)",advance='no') IS%incidences(i,j)
+    do row=1,IS%v
+       do col=1,IS%b
+          write (*,"(I1)",advance='no') IS%incidences(row,col)
        enddo
        write (*,"(A1)",advance='no') "-"
-       write (*,"(I1)",advance='no') IS%SUM_IN_COL(j)
+       write (*,"(I1)",advance='no') IS%SUM_IN_ROW(row)
        print *
     enddo
-    do i=1,IS%VERTICES
+    do col=1,IS%b
        write (*,"(A1)",advance='no') "|"
     enddo
     print *
-    do i=1,IS%VERTICES
-       write (*,"(I1)",advance='no') IS%SUM_IN_ROW(i)
+    do col=1,IS%b
+       write (*,"(I1)",advance='no') IS%SUM_IN_col(col)
     enddo
     print *
     write(*,*),"]"
