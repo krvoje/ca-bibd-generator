@@ -18,13 +18,6 @@ module incidence_structure
      ! Heuristic helper vals
      integer SUM_TOTAL     
      integer SUM_IDEAL ! Should be VERTICES_PER_BLOC*VERTICES
-     logical SUM_TOTAL_LESS_THAN_IDEAL
-     logical SUM_TOTAL_MORE_THAN_IDEAL
-     logical SUM_TOTAL_NOT_IDEAL
-
-     integer MAX_CHANGE_FACTOR
-     integer MAX_CHANGE_FACTOR_DORMANT
-     integer MAX_CHANGE_FACTOR_ACTIVE
 
      integer heuristic_distance
      integer max_hd_coef
@@ -68,10 +61,6 @@ contains
 
     IS%SUM_IDEAL=IS%k*IS%b
     
-    IS%SUM_TOTAL_LESS_THAN_IDEAL=IS%SUM_TOTAL<=IS%SUM_IDEAL
-    IS%SUM_TOTAL_MORE_THAN_IDEAL=IS%SUM_TOTAL>=IS%SUM_IDEAL
-    IS%SUM_TOTAL_NOT_IDEAL = (IS%SUM_TOTAL /= IS%SUM_IDEAL)
-
     call updateCache(IS)
   end subroutine construct
 
@@ -96,10 +85,6 @@ contains
 
     IS%SUM_TOTAL=sum(IS%SUM_IN_ROW(1:IS%v))
     
-    IS%SUM_TOTAL_LESS_THAN_IDEAL = IS%SUM_TOTAL <= IS%SUM_IDEAL
-    IS%SUM_TOTAL_MORE_THAN_IDEAL = IS%SUM_TOTAL >= IS%SUM_IDEAL
-    IS%SUM_TOTAL_NOT_IDEAL = (IS%SUM_TOTAL /= IS%SUM_IDEAL)
-
     call calculateHeuristicDistance(IS)
   end subroutine updateCache
   
@@ -194,7 +179,7 @@ contains
           call increment(IS%HEURISTIC_DISTANCE, abs(IS%ROW_INTERSECTION(i,j) - IS%LAMBDA))
        enddo
     enddo
-    IS%max_hd_coef = IS%v - 1 + 3
+    IS%max_hd_coef = is%SUM_TOTAL + (IS%v - 1) + 2
   end subroutine calculateHeuristicDistance
   
   !!***
@@ -207,9 +192,9 @@ contains
 
     integer i,j
 
-    ! if(is%heuristic_distance <= is%max_hd_coef * 5) then
-    !     print *, "hd: ", is%heuristic_distance / is%max_hd_coef
-    !     call writeMatrix(IS)
+    ! if(is%heuristic_distance <= is%max_hd_coef ) then
+    !    print *, "hd: ", is%heuristic_distance, "/", is%max_hd_coef
+    !    call writeMatrix(IS)
     ! endif
     
     if(IS%SUM_TOTAL /= IS%SUM_IDEAL) then
