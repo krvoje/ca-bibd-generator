@@ -76,6 +76,10 @@ subroutine randomCA_BIBD(is, optSteps)
         if (is%SUM_TOTAL < is%SUM_IDEAL) call increment(changefactor, 1)
         if (is%SUM_IN_COL(col) < is%k) call increment(changefactor, 1)
         if (is%SUM_IN_ROW(row) < is%r) call increment(changefactor, 1)
+
+        if (is%SUM_TOTAL > is%SUM_IDEAL) call decrement(changefactor, 1)
+        if (is%SUM_IN_COL(col) > is%k) call decrement(changefactor, 1)
+        if (is%SUM_IN_ROW(row) > is%r) call decrement(changefactor, 1)
      else if (active(is,row,col)) then
         do vertex=1,is%v
            if(vertex==row) cycle
@@ -84,6 +88,10 @@ subroutine randomCA_BIBD(is, optSteps)
         if (is%SUM_TOTAL > is%SUM_IDEAL) call increment(changefactor, 1)
         if (is%SUM_IN_COL(col) > is%k) call increment(changefactor, 1)
         if (is%SUM_IN_ROW(row) > is%r) call increment(changefactor, 1)
+
+        if (is%SUM_TOTAL < is%SUM_IDEAL) call decrement(changefactor, 1)
+        if (is%SUM_IN_COL(col) < is%k) call decrement(changefactor, 1)
+        if (is%SUM_IN_ROW(row) < is%r) call decrement(changefactor, 1)
      endif
      if(randomInt(maxChangeFactor) < changeFactor) call flip(is,row,col)
   enddo
