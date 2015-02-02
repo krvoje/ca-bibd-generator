@@ -51,12 +51,14 @@ subroutine randomCA_BIBD(is, optSteps)
   type(IncidenceStructure) is
   integer optSteps
 
-  integer changeFactor, maxChangeFactor
+  integer changeFactor, maxChangeFactorActive, maxChangeFactorDormant
   integer row, col
   integer vertex, blok
   logical nOpt
 
-  maxChangeFactor = is%v -1 + 3
+  maxChangeFactorDormant = (is%v - 1) * is%LAMBDA + is%SUM_IDEAL + is%r + is%k
+  maxChangeFactorActive = (is%v - 1) * (is%v - is%LAMBDA) + is%SUM_TOTAL + is%v + is%b
+  
   ! Rince and repeat until BIBD
   do while(.true.)
 
@@ -71,29 +73,34 @@ subroutine randomCA_BIBD(is, optSteps)
      if (dormant(is,row,col)) then
         do vertex=1,is%v
            if(vertex==row) cycle
-           if (is%ROW_INTERSECTION(row,vertex) < is%LAMBDA) call increment(changefactor, 1)
+           if (is%ROW_INTERSECTION(row,vertex) < is%LAMBDA)&
+                call increment(changefactor, is%LAMBDA - is%ROW_INTERSECTION(row,vertex))
+           !if (is%ROW_INTERSECTION(row,vertex) > is%LAMBDA) call decrement(changefactor, 1)
         enddo
-        if (is%SUM_TOTAL < is%SUM_IDEAL) call increment(changefactor, 1)
-        if (is%SUM_IN_COL(col) < is%k) call increment(changefactor, 1)
-        if (is%SUM_IN_ROW(row) < is%r) call increment(changefactor, 1)
+        if (is%SUM_TOTAL < is%SUM_IDEAL) call increment(changefactor, is%SUM_IDEAL - is%SUM_TOTAL)
+        if (is%SUM_IN_ROW(row) < is%r) call increment(changefactor, is%r - is%SUM_IN_ROW(row))
+        if (is%SUM_IN_COL(col) < is%k) call increment(changefactor, is%k - is%SUM_IN_COL(col))
 
-        if (is%SUM_TOTAL > is%SUM_IDEAL) call decrement(changefactor, 1)
-        if (is%SUM_IN_COL(col) > is%k) call decrement(changefactor, 1)
-        if (is%SUM_IN_ROW(row) > is%r) call decrement(changefactor, 1)
+        if (is%SUM_TOTAL > is%SUM_IDEAL) call decrement(changefactor, is%SUM_TOTAL - is%SUM_IDEAL)
+        if (is%SUM_IN_ROW(row) > is%r) call decrement(changefactor, is%SUM_IN_ROW(row) - is%r)
+        if (is%SUM_IN_COL(col) > is%k) call decrement(changefactor, is%SUM_IN_COL(col) - is%k)
+        if(randomInt(maxChangeFactorDormant) < changeFactor) call flip(is,row,col)
      else if (active(is,row,col)) then
         do vertex=1,is%v
            if(vertex==row) cycle
-           if (is%ROW_INTERSECTION(row,vertex) > is%LAMBDA) call increment(changefactor, 1)
+           if (is%ROW_INTERSECTION(row,vertex) > is%LAMBDA)&
+                call increment(changefactor, is%ROW_INTERSECTION(row,vertex) - is%LAMBDA)              
+           !if (is%ROW_INTERSECTION(row,vertex) < is%LAMBDA) call decrement(changefactor, 1)
         enddo
-        if (is%SUM_TOTAL > is%SUM_IDEAL) call increment(changefactor, 1)
-        if (is%SUM_IN_COL(col) > is%k) call increment(changefactor, 1)
-        if (is%SUM_IN_ROW(row) > is%r) call increment(changefactor, 1)
+        if (is%SUM_TOTAL > is%SUM_IDEAL) call increment(changefactor, is%SUM_TOTAL - is%SUM_IDEAL)
+        if (is%SUM_IN_ROW(row) > is%r) call increment(changefactor, is%SUM_IN_ROW(row) - is%r)
+        if (is%SUM_IN_COL(col) > is%k) call increment(changefactor, is%SUM_IN_COL(col) - is%k)
 
-        if (is%SUM_TOTAL < is%SUM_IDEAL) call decrement(changefactor, 1)
-        if (is%SUM_IN_COL(col) < is%k) call decrement(changefactor, 1)
-        if (is%SUM_IN_ROW(row) < is%r) call decrement(changefactor, 1)
+        if (is%SUM_TOTAL < is%SUM_IDEAL) call decrement(changefactor, is%SUM_IDEAL - is%SUM_TOTAL)
+        if (is%SUM_IN_ROW(row) < is%r) call decrement(changefactor, is%r - is%SUM_IN_ROW(row))
+        if (is%SUM_IN_COL(col) < is%k) call decrement(changefactor, is%k - is%SUM_IN_COL(col))
+        if(randomInt(maxChangeFactorActive) < changeFactor) call flip(is,row,col)        
      endif
-     if(randomInt(maxChangeFactor) < changeFactor) call flip(is,row,col)
   enddo
 end subroutine randomCA_BIBD
 
