@@ -7,6 +7,7 @@ module incidence_structure
   type IncidenceStructure
      integer, dimension(:,:), allocatable:: INCIDENCES ! incidences
      integer, dimension(:,:), allocatable:: ROW_INTERSECTION ! dp
+     integer, dimension(:,:), allocatable:: COL_INTERSECTION ! dp
      integer, dimension(:), allocatable:: SUM_IN_ROW ! SUM_IN_ROW
      integer, dimension(:), allocatable:: SUM_IN_COL ! SUM_IN_COL
      integer v !v
@@ -21,6 +22,7 @@ module incidence_structure
 
      integer heuristic_distance
      integer max_hd_coef
+     integer generations
   end type IncidenceStructure
 
 contains
@@ -50,16 +52,19 @@ contains
 
     allocate(IS%incidences(1:IS%v,1:IS%b))
     allocate(IS%ROW_INTERSECTION(1:IS%v,1:IS%v))
+    allocate(IS%COL_INTERSECTION(1:IS%b,1:IS%b))
     allocate(IS%SUM_IN_ROW(1:IS%v))
     allocate(IS%SUM_IN_COL(1:IS%b))
 
     IS%incidences(1:IS%v,1:IS%b)=0
     IS%ROW_INTERSECTION(1:IS%v,1:IS%v)=0
+    IS%COL_INTERSECTION(1:IS%b,1:IS%b)=0
     IS%SUM_IN_ROW(1:IS%v)=0
     IS%SUM_IN_COL(1:IS%b)=0
     IS%SUM_TOTAL=0
 
     IS%SUM_IDEAL=IS%k*IS%b
+    is%generations=0
     
     call updateCache(IS)
   end subroutine construct
@@ -83,6 +88,12 @@ contains
        enddo
     enddo
 
+    do i=1,IS%b
+       do j=1,IS%b
+          IS%COL_INTERSECTION(i,j)=dot_product(IS%incidences(:,i), IS%incidences(:,j))
+       enddo
+    enddo
+
     IS%SUM_TOTAL=sum(IS%SUM_IN_ROW(1:IS%v))
     
     call calculateHeuristicDistance(IS)
@@ -92,6 +103,7 @@ contains
     type(IncidenceStructure) IS
     deallocate(IS%incidences)
     deallocate(IS%ROW_INTERSECTION)
+    deallocate(IS%COL_INTERSECTION)
     deallocate(IS%SUM_IN_ROW)
     deallocate(IS%SUM_IN_COL)
   end subroutine deconstruct
@@ -136,16 +148,17 @@ contains
        call decrement(IS%SUM_IN_ROW(row),1)
        call decrement(IS%SUM_IN_COL(col),1)
        call decrement(IS%ROW_INTERSECTION(row,row),1)
+       call decrement(IS%COL_INTERSECTION(col,col),1)
     endif
     if (newVal==1) then
        call increment(IS%SUM_TOTAL,1)
        call increment(IS%SUM_IN_ROW(row),1)
        call increment(IS%SUM_IN_COL(col),1)
        call increment(IS%ROW_INTERSECTION(row,row),1)
+       call increment(IS%COL_INTERSECTION(col,col),1)
     endif
 
     do otherRow=1,IS%v
-       if(otherRow==row) cycle
        if(IS%incidences(otherRow,col)==1) then 
           if(newVal==0) then
              call decrement(IS%ROW_INTERSECTION(otherRow,row),1)
@@ -154,6 +167,19 @@ contains
           if(newVal==1) then
              call increment(IS%ROW_INTERSECTION(otherRow,row),1)
              call increment(IS%ROW_INTERSECTION(row,otherRow),1)
+          endif
+       endif
+    enddo
+
+    do otherCol=1,IS%b
+       if(IS%incidences(row,otherCol)==1) then 
+          if(newVal==0) then
+             call decrement(IS%COL_INTERSECTION(otherCol,col),1)
+             call decrement(IS%COL_INTERSECTION(col,otherCol),1)
+          endif
+          if(newVal==1) then
+             call increment(IS%COL_INTERSECTION(otherCol,col),1)
+             call increment(IS%COL_INTERSECTION(col,otherCol),1)
           endif
        endif
     enddo
@@ -193,8 +219,8 @@ contains
     integer i,j
 
     ! if(is%heuristic_distance <= is%max_hd_coef ) then
-    !    print *, "hd: ", is%heuristic_distance, "/", is%max_hd_coef
-    !    call writeMatrix(IS)
+    !     print *, "hd: ", is%max_hd_coef, "/", is%heuristic_distance
+    !     call writeMatrix(IS)
     ! endif
     
     if(IS%SUM_TOTAL /= IS%SUM_IDEAL) then
@@ -235,6 +261,7 @@ contains
 
     ! Otherwise, we got a BIBD
     isBIBD=.True.
+    print *, "Generations: ", is%generations
     return
   end function isBIBD
 
