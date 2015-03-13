@@ -64,8 +64,8 @@ subroutine randomCA_BIBD(is, optSteps)
   integer generations
   logical nOpt
 
-  maxChangeFactorDormant = (is%v + is%b - 2) + is%SUM_IDEAL + is%r + is%k
-  maxChangeFactorActive = (is%v + is%b - 2) + is%SUM_TOTAL + is%v + is%b
+  maxChangeFactorDormant = (is%b/is%v)*(is%v + is%b - 2) + is%SUM_IDEAL + is%r + is%k
+  maxChangeFactorActive = (is%b/is%v)*(is%v + is%b - 2) + is%SUM_TOTAL + is%v + is%b
   generations=0
 
   lambda_complement = IS%LAMBDA + IS%b - 2*IS%r
@@ -76,7 +76,7 @@ subroutine randomCA_BIBD(is, optSteps)
      if (isBIBD(is))&
         return     
 
-     do i = optSteps, 1, -1
+     do i = optSteps, optSteps, -1
         if(nOpt(i, i, is)) return
      enddo
 
@@ -88,17 +88,16 @@ subroutine randomCA_BIBD(is, optSteps)
      ! Not really sure why, but this block below really speeds up the convergence 
      do point=1,max(is%v,is%b)
         if(point <= is%v .and. is%ROW_INTERSECTION(row,point) /= is%LAMBDA) then
-           call increment(changefactor, 1)
-        else
-           if(is%v > is%b) call decrement(changeFactor, 1)
+           call increment(changefactor, (is%b/is%v))
         endif
+
         if(point <= is%b .and. is%COL_INTERSECTION(col,point) /= is%LAMBDA) then
-           call increment(changefactor, 1)
+           call increment(changefactor, (is%b/is%v))
         else
-           if(is%b > is%v) call decrement(changeFactor, 1)
+           call decrement(changeFactor, (is%b/is%v))
         endif
      enddo
-
+     
      if (dormant(is,row,col)) then
         if (is%SUM_TOTAL /= is%SUM_IDEAL) call increment(changefactor, is%SUM_IDEAL - is%SUM_TOTAL)
         if (is%SUM_IN_ROW(row) /= is%r) call increment(changefactor, is%r - is%SUM_IN_ROW(row))
@@ -129,10 +128,10 @@ recursive logical function nOpt(n,topOpt,is) result (successfulOpt)
 
   if(n<1) return
   if (abs(is%heuristic_distance) > is%max_hd_coef * n) return
-  ! if (abs(is%SUM_IDEAL - is%SUM_TOTAL) /= n) then
-  !    successfulOpt = nOpt(n-1,n-1,is)
-  !    return
-  ! endif
+  if (abs(is%SUM_IDEAL - is%SUM_TOTAL) /= n) then
+     successfulOpt = nOpt(n-1,n-1,is)
+     return
+  endif
   
   sumTotal_lt = (is%SUM_TOTAL <= is%SUM_IDEAL - n)
   sumTotal_gt = (is%SUM_TOTAL >= is%SUM_IDEAL + n)
