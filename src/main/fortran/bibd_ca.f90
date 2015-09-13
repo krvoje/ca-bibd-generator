@@ -63,12 +63,14 @@ subroutine randomCA_BIBD(is, optSteps)
   integer vertex, blok
   integer generations
   logical nOpt
+  integer incRatio
 
   maxChangeFactorDormant = (is%b/is%v)*(is%v + is%b - 2) + is%SUM_IDEAL + is%r + is%k
   maxChangeFactorActive = (is%b/is%v)*(is%v + is%b - 2) + is%SUM_TOTAL + is%v + is%b
   generations=0
 
   lambda_complement = IS%LAMBDA + IS%b - 2*IS%r
+  incRatio=max(is%v, is%b) / min(is%v, is%b)
   
   ! Rince and repeat until BIBD
   do while(.true.)
@@ -85,16 +87,18 @@ subroutine randomCA_BIBD(is, optSteps)
      row = randomInt(is%v)+1
      col = randomInt(is%b)+1
 
-     ! Not really sure why, but this block below really speeds up the convergence 
+     ! Not really sure why, but this block below really speeds up the convergence     
      do point=1,max(is%v,is%b)
         if(point <= is%v .and. is%ROW_INTERSECTION(row,point) /= is%LAMBDA) then
-           call increment(changefactor, (is%b/is%v))
+           call increment(changefactor, incRatio)
+        else
+            if(is%v >= is%b) call decrement(changeFactor, incRatio)
         endif
 
         if(point <= is%b .and. is%COL_INTERSECTION(col,point) /= is%LAMBDA) then
-           call increment(changefactor, (is%b/is%v))
+           call increment(changefactor, incRatio)
         else
-           call decrement(changeFactor, (is%b/is%v))
+           if(is%b > is%v) call decrement(changeFactor, incRatio)
         endif
      enddo
      

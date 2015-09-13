@@ -1,13 +1,18 @@
+TARGET=target
+BIN=$(TARGET)/bin
+OBJ=$(TARGET)/obj
+MOD=$(TARGET)/mod
+FORTRAN_SRC=src/main/fortran
 all: modules main
 modules:
-	mkdir -p obj mod
-	gfortran -c mersene.f90 -o obj/mersene.o -Jmod
-	gfortran -c utils.f90 -o obj/utils.o -Jmod
-	gfortran -c incidence_structure.f90 -o obj/incidence_structure.o -Jmod
-	gfortran -c randgen.f -o obj/randgen.o -Jmod
+	mkdir -p $(OBJ) $(MOD)
+	gfortran -c $(FORTRAN_SRC)/mersene.f90 -o $(OBJ)/mersene.o -J$(MOD)
+	gfortran -c $(FORTRAN_SRC)/utils.f90 -o $(OBJ)/utils.o -J$(MOD)
+	gfortran -c $(FORTRAN_SRC)/incidence_structure.f90 -o $(OBJ)/incidence_structure.o -J$(MOD)
+	gfortran -c $(FORTRAN_SRC)/randgen.f -o $(OBJ)/randgen.o -J$(MOD)
 main: modules
-	mkdir -p bin/
-	mkdir -p mod/
-	gfortran obj/*.o bibd_ca.f90 -o bin/bibd_ca -Imod/
+	mkdir -p $(BIN)/
+	mkdir -p $(MOD)/
+	gfortran $(OBJ)/*.o $(FORTRAN_SRC)/bibd_ca.f90 -o $(BIN)/bibd_ca -I$(MOD)/
 clean:	
-	rm -rf obj/ bin/ mod/
+	rm -rf $(TARGET)
