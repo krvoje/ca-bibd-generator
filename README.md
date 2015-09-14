@@ -8,7 +8,7 @@ Builds with gfortran 4.7.2.
 
 Usage:
 
-    ./bin/bibd_ca v k lambda [optimisation-steps = 2]
+    ./target/bin/bibd_ca v k lambda [optimisation-steps = 2]
 
 For instance to generate a Fano plane matrix:
 
