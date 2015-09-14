@@ -14,6 +14,6 @@ For instance to generate a Fano plane matrix:
 
     make
     # To use a 2-opt improvement on each iteration
-    ./target/bibd_ca 7 3 1
+    ./target/bin/bibd_ca 7 3 1
     # For a completely random generation
-    ./target/bibd_ca 7 3 1 0
+    ./target/bin/bibd_ca 7 3 1 0
