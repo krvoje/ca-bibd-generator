@@ -8,12 +8,16 @@ Builds with gfortran 4.7.2.
 
 Usage:
 
-    ./target/bin/bibd_ca v k lambda [optimisation-steps = 2]
+    ./target/bibd_ca v k lambda [optimisation-steps = 2]
 
 For instance to generate a Fano plane matrix:
 
     make
     # To use a 2-opt improvement on each iteration
-    ./target/bin/bibd_ca 7 3 1
+    ./target/bibd_ca 7 3 1
+    ./target/bibd_ca 7 4 2
+    ./target/bibd_ca 9 3 1
     # For a completely random generation
-    ./target/bin/bibd_ca 7 3 1 0
+    ./target/bibd_ca 7 3 1 0
+    ./target/bibd_ca 7 4 2 0
+    ./target/bibd_ca 9 3 1 0
