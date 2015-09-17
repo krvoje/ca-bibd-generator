@@ -58,18 +58,14 @@ subroutine randomCA_BIBD(is, optSteps)
   integer optSteps
 
   integer changeFactor, maxChangeFactorActive, maxChangeFactorDormant
-  integer maxChangeFactor, lambda_complement
+  integer maxChangeFactor
   integer row, col, i, point
-  integer vertex, blok
-  integer generations
   logical nOpt
   integer incRatio
 
-  maxChangeFactorDormant = (is%b/is%v)*(is%v + is%b - 2) + is%SUM_IDEAL + is%r + is%k
-  maxChangeFactorActive = (is%b/is%v)*(is%v + is%b - 2) + is%SUM_TOTAL + is%v + is%b
-  generations=0
+  maxChangeFactorDormant = (is%b/is%v)*(is%v + is%b - 2) + is%sum_ideal + is%r + is%k
+  maxChangeFactorActive = (is%b/is%v)*(is%v + is%b - 2) + is%sum_total + is%v + is%b
 
-  lambda_complement = IS%LAMBDA + IS%b - 2*IS%r
   incRatio=max(is%v, is%b) / min(is%v, is%b)
   
   ! Rince and repeat until BIBD
@@ -89,13 +85,13 @@ subroutine randomCA_BIBD(is, optSteps)
 
      ! Not really sure why, but this block below really speeds up the convergence     
      do point=1,max(is%v,is%b)
-        if(point <= is%v .and. is%ROW_INTERSECTION(row,point) /= is%LAMBDA) then
+        if(point <= is%v .and. is%row_intersection(row,point) /= is%lambda) then
            call increment(changefactor, incRatio)
         else
             if(is%v >= is%b) call decrement(changeFactor, incRatio)
         endif
 
-        if(point <= is%b .and. is%COL_INTERSECTION(col,point) /= is%LAMBDA) then
+        if(point <= is%b .and. is%col_intersection(col,point) /= is%lambda) then
            call increment(changefactor, incRatio)
         else
            if(is%b > is%v) call decrement(changeFactor, incRatio)
@@ -103,15 +99,15 @@ subroutine randomCA_BIBD(is, optSteps)
      enddo
      
      if (dormant(is,row,col)) then
-        if (is%SUM_TOTAL /= is%SUM_IDEAL) call increment(changefactor, is%SUM_IDEAL - is%SUM_TOTAL)
-        if (is%SUM_IN_ROW(row) /= is%r) call increment(changefactor, is%r - is%SUM_IN_ROW(row))
-        if (is%SUM_IN_COL(col) /= is%k) call increment(changefactor, is%k - is%SUM_IN_COL(col))
+        if (is%sum_total /= is%sum_ideal) call increment(changefactor, is%sum_ideal - is%sum_total)
+        if (is%sum_in_row(row) /= is%r) call increment(changefactor, is%r - is%sum_in_row(row))
+        if (is%sum_in_col(col) /= is%k) call increment(changefactor, is%k - is%sum_in_col(col))
         
         if(randomInt(maxChangeFactorDormant) < changeFactor) call flip(is,row,col)
      else if (active(is,row,col)) then
-        if (is%SUM_TOTAL /= is%SUM_IDEAL) call increment(changefactor, is%SUM_TOTAL - is%SUM_IDEAL)
-        if (is%SUM_IN_ROW(row) /= is%r) call increment(changefactor, is%SUM_IN_ROW(row) - is%r)
-        if (is%SUM_IN_COL(col) /= is%k) call increment(changefactor, is%SUM_IN_COL(col) - is%k)
+        if (is%sum_total /= is%sum_ideal) call increment(changefactor, is%sum_total - is%sum_ideal)
+        if (is%sum_in_row(row) /= is%r) call increment(changefactor, is%sum_in_row(row) - is%r)
+        if (is%sum_in_col(col) /= is%k) call increment(changefactor, is%sum_in_col(col) - is%k)
 
         if(randomInt(maxChangeFactorActive) < changeFactor) call flip(is,row,col)
      endif
@@ -125,36 +121,36 @@ recursive logical function nOpt(n,topOpt,is) result (successfulOpt)
   type(IncidenceStructure) is
   integer n,row,col,topOpt  
 
-  logical sumTotal_lt, sumTotal_gt
-  logical sumInRow_lt, sumInRow_gt
+  logical sumTotal_low, sumTotal_high
+  logical sumInRow_low, sumInRow_high
 
   successfulOpt=.false.
 
   if(n<1) return
-  if (abs(is%heuristic_distance) > is%max_hd_coef * n) return
-  if (abs(is%SUM_IDEAL - is%SUM_TOTAL) /= n) then
+  if (abs(is%heuristic_distance) > is%max_heuristic_distance * n) return
+  if (abs(is%sum_ideal - is%sum_total) /= n) then
      successfulOpt = nOpt(n-1,n-1,is)
      return
   endif
   
-  sumTotal_lt = (is%SUM_TOTAL <= is%SUM_IDEAL - n)
-  sumTotal_gt = (is%SUM_TOTAL >= is%SUM_IDEAL + n)
+  sumTotal_low = (is%sum_total <= is%sum_ideal - n)
+  sumTotal_high = (is%sum_total >= is%sum_ideal + n)
     
   do row=1,is%v
-     sumInRow_lt = (is%SUM_IN_ROW(row) <= is%r - n)
-     sumInRow_gt = (is%SUM_IN_ROW(row) >= is%r + n)
+     sumInRow_low = (is%sum_in_row(row) <= is%r - n)
+     sumInRow_high = (is%sum_in_row(row) >= is%r + n)
      do col=1,is%b
         if(dormant(is,row,col)) then
-            if(.not.sumTotal_lt) cycle
-            if(.not.sumInRow_lt .and. is%SUM_IN_COL(col) > is%k - n) cycle
+            if(.not.sumTotal_low) cycle
+            if(.not.sumInRow_low .and. is%sum_in_col(col) > is%k - n) cycle
         endif
         if(active(is,row,col)) then
-           if(.not.sumTotal_gt) cycle
-           if(.not.(sumInRow_gt) .and. is%SUM_IN_COL(col) < is%k + n) cycle
+           if(.not.sumTotal_high) cycle
+           if(.not.(sumInRow_high) .and. is%sum_in_col(col) < is%k + n) cycle
         endif    
         call flip(is,row,col)
-        sumInRow_lt = (is%SUM_IN_ROW(row) <= is%r-n)
-        sumInRow_gt = (is%SUM_IN_ROW(row) >= is%r+n)
+        sumInRow_low = (is%sum_in_row(row) <= is%r-n)
+        sumInRow_high = (is%sum_in_row(row) >= is%r+n)
         if(n == 1) then
            if (isBIBD(is)) then
               print *, topOpt, "-opt yielded a BIBD"
@@ -166,8 +162,8 @@ recursive logical function nOpt(n,topOpt,is) result (successfulOpt)
            return
         else
            call flip(is,row,col)
-           sumInRow_lt = (is%SUM_IN_ROW(row) <= is%r-n)
-           sumInRow_gt = (is%SUM_IN_ROW(row) >= is%r+n)
+           sumInRow_low = (is%sum_in_row(row) <= is%r-n)
+           sumInRow_high = (is%sum_in_row(row) >= is%r+n)
            successfulOpt=.false.
            return
         endif
