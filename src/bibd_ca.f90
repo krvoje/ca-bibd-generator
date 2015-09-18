@@ -1,12 +1,12 @@
 ! A cellular automaton that tries to generate a BIBD
-! for the given parameters  
+! for the given parameters
 program bibd_ca
 
   use incidence_structure
   use utils
-  
+
   implicit none
-  
+
   type(IncidenceStructure) is
   integer optSteps
   integer v,k,lmbd
@@ -19,7 +19,7 @@ program bibd_ca
      write (*,*) "Usage:"
      call get_command_argument(0,f)
      write (*,*) f ,"v k λ [optSteps]"
-     stop        
+     stop
   else
      call get_command_argument(1,f)
      read (f,"(I10)") v
@@ -42,7 +42,7 @@ program bibd_ca
 
   call randomCA_BIBD(is,optSteps)
   print *, "An incidence matrix for the given parameters found:"
-  call writeMatrix(is)  
+  call writeMatrix(is)
 
   ! Memory cleanup
   call deconstruct(is)
@@ -52,7 +52,7 @@ subroutine randomCA_BIBD(is, optSteps)
   use mtmod
   use incidence_structure
   use n_opt
-  
+
   implicit none
 
   type(IncidenceStructure) is
@@ -61,18 +61,22 @@ subroutine randomCA_BIBD(is, optSteps)
   integer changeFactor, maxChangeFactorActive, maxChangeFactorDormant
   integer maxChangeFactor
   integer row, col, i, point
-  integer incRatio
+  integer inc_ratio, min_dim, max_dim
+  integer lambda_row_delta
+  integer lambda_col_delta
 
-  maxChangeFactorDormant = (is%b/is%v)*(is%v + is%b - 2) + is%sum_ideal + is%r + is%k
-  maxChangeFactorActive = (is%b/is%v)*(is%v + is%b - 2) + is%sum_total + is%v + is%b
+  min_dim = min(is%v, is%b)
+  max_dim = max(is%v, is%b)
+  inc_ratio = max_dim / min_dim
 
-  incRatio=max(is%v, is%b) / min(is%v, is%b)
-  
+  maxChangeFactorDormant = inc_ratio*(is%v + is%b - 2) + is%sum_ideal + is%r + is%k
+  maxChangeFactorActive = inc_ratio*(is%v + is%b - 2) + is%sum_total + is%v + is%b
+
+
   ! Rince and repeat until BIBD
   do while(.true.)
      call increment(is%generations,1)
-     if (isBIBD(is))&
-        return     
+     if (isBIBD(is)) return
 
      do i = optSteps, optSteps, -1
         if(nOpt(i, i, is)) return
@@ -83,26 +87,32 @@ subroutine randomCA_BIBD(is, optSteps)
      row = randomInt(is%v)+1
      col = randomInt(is%b)+1
 
-     ! Not really sure why, but this block below really speeds up the convergence     
-     do point=1,max(is%v,is%b)
-        if(point <= is%v .and. is%row_intersection(row,point) /= is%lambda) then
-           call increment(changefactor, incRatio)
-        else
-            if(is%v >= is%b) call decrement(changeFactor, incRatio)
+     ! Not really sure why, but this block below really speeds up the convergence
+     do point=1,max_dim
+        lambda_row_delta = is%lambda - is%row_intersection(row, point)
+        lambda_col_delta = is%lambda - is%col_intersection(col, point)
+        if(point <= is%v) then
+            if(lambda_row_delta /= 0) then
+                call increment(changefactor, inc_ratio)
+            else
+                if(is%v >= is%b) call decrement(changeFactor, inc_ratio)
+            endif
         endif
 
-        if(point <= is%b .and. is%col_intersection(col,point) /= is%lambda) then
-           call increment(changefactor, incRatio)
-        else
-           if(is%b > is%v) call decrement(changeFactor, incRatio)
+        if(point <= is%b) then
+            if(lambda_col_delta /= 0) then
+                call increment(changefactor, inc_ratio)
+            else
+                if(is%v < is%b) call decrement(changeFactor, inc_ratio)
+            endif
         endif
      enddo
-     
+
      if (dormant(is,row,col)) then
         if (is%sum_total /= is%sum_ideal) call increment(changefactor, is%sum_ideal - is%sum_total)
         if (is%sum_in_row(row) /= is%r) call increment(changefactor, is%r - is%sum_in_row(row))
         if (is%sum_in_col(col) /= is%k) call increment(changefactor, is%k - is%sum_in_col(col))
-        
+
         if(randomInt(maxChangeFactorDormant) < changeFactor) call flip(is,row,col)
      else if (active(is,row,col)) then
         if (is%sum_total /= is%sum_ideal) call increment(changefactor, is%sum_total - is%sum_ideal)

@@ -47,7 +47,7 @@ contains
     else
        is%r=int(r_r)
        is%b=int(b_r)
-       print *, "v,k,λ,b,r=", is%v,is%k,is%lambda,is%b,is%r       
+       print *, "(v,k,λ,b,r) = ", is%v,is%k,is%lambda,is%b,is%r       
     endif
 
     allocate(is%incidences(1:is%v,1:is%b))
