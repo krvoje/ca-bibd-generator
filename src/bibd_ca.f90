@@ -51,27 +51,35 @@ end program bibd_ca
 subroutine randomCA_BIBD(is, optSteps)
   use mtmod
   use incidence_structure
+  use tabu_list
   use n_opt
 
   implicit none
 
   type(IncidenceStructure) is
+  type(TabuList) rows_tabu, cols_tabu
   integer optSteps
 
   integer changeFactor, maxChangeFactorActive, maxChangeFactorDormant
   integer maxChangeFactor
   integer row, col, i, point
-  integer inc_ratio, min_dim, max_dim
+  integer inc_ratio, min_dim, max_dim, max_point
   integer lambda_row_delta
   integer lambda_col_delta
 
+  call mkTabuList(rows_tabu, 1)
+  call mkTabuList(cols_tabu, 1)
+
   min_dim = min(is%v, is%b)
   max_dim = max(is%v, is%b)
-  inc_ratio = max_dim / min_dim
+  max_point = max(is%r, is%k)
+  inc_ratio = is%v / is%k
 
   maxChangeFactorDormant = inc_ratio*(is%v + is%b - 2) + is%sum_ideal + is%r + is%k
   maxChangeFactorActive = inc_ratio*(is%v + is%b - 2) + is%sum_total + is%v + is%b
 
+  row = randomInt(is%v)+1
+  col = randomInt(is%b)+1
 
   ! Rince and repeat until BIBD
   do while(.true.)
@@ -84,26 +92,35 @@ subroutine randomCA_BIBD(is, optSteps)
 
      changeFactor = 0
 
-     row = randomInt(is%v)+1
-     col = randomInt(is%b)+1
+     do while(TabuList_contains(rows_tabu, row))
+        row = randomInt(is%v)+1
+        call pop(rows_tabu)
+        call push(rows_tabu, row)
+     enddo
 
-     ! Not really sure why, but this block below really speeds up the convergence
+     do while(TabuList_contains(cols_tabu, col))
+        col = randomInt(is%b)+1
+        call pop(cols_tabu)
+        call push(cols_tabu, col)
+     enddo
+
+     ! Combined loop for 1:is%v and 1:is%b
      do point=1,max_dim
         lambda_row_delta = is%lambda - is%row_intersection(row, point)
-        lambda_col_delta = is%lambda - is%col_intersection(col, point)
         if(point <= is%v) then
             if(lambda_row_delta /= 0) then
                 call increment(changefactor, inc_ratio)
             else
-                if(is%v >= is%b) call decrement(changeFactor, inc_ratio)
+                if(is%b < is%v) call decrement(changeFactor, inc_ratio)
             endif
         endif
 
+        lambda_col_delta = is%lambda - is%col_intersection(col, point)
         if(point <= is%b) then
             if(lambda_col_delta /= 0) then
                 call increment(changefactor, inc_ratio)
             else
-                if(is%v < is%b) call decrement(changeFactor, inc_ratio)
+                if(is%b >= is%v) call decrement(changeFactor, inc_ratio)
             endif
         endif
      enddo
