@@ -4,21 +4,24 @@ program bibd_ca
 
   use incidence_structure
   use utils
+  use tabu_list
 
   implicit none
 
   type(IncidenceStructure) is
+  type(TabuList) rows_tabu, cols_tabu
   integer optSteps
   integer v,k,lmbd
   integer i,j
   real r_r,b_r
+  integer tabu_size
   character(100) f
 
   ! If the number of command line params is invalid, print instructions
-  if (command_argument_count() /= 3 .and. command_argument_count() /= 4) then
+  if (command_argument_count() /= 5) then
      write (*,*) "Usage:"
      call get_command_argument(0,f)
-     write (*,*) f ,"v k λ [optSteps]"
+     write (*,*) f ,"v k λ optSteps tabuSize"
      stop
   else
      call get_command_argument(1,f)
@@ -27,12 +30,10 @@ program bibd_ca
      read (f,"(I10)") k
      call get_command_argument(3,f)
      read (f,"(I10)") lmbd
-     if(command_argument_count() == 4) then
-        call get_command_argument(4,f)
-        read (f,"(I10)") optSteps
-     else
-        optSteps=2
-     endif
+     call get_command_argument(4,f)
+     read (f,"(I10)") optSteps
+     call get_command_argument(5,f)
+     read (f,"(I10)") tabu_size
   endif
 
   call seedRandomGenerator()
@@ -40,15 +41,20 @@ program bibd_ca
 
   if(optSteps > is%v * is%b) optSteps = is%v*is%b
 
-  call randomCA_BIBD(is,optSteps)
+  call mkTabuList(rows_tabu, tabu_size)
+  call mkTabuList(cols_tabu, tabu_size)
+
+  call randomCA_BIBD(is, optSteps, rows_tabu, cols_tabu)
   print *, "An incidence matrix for the given parameters found:"
   call writeMatrix(is)
 
   ! Memory cleanup
   call deconstruct(is)
+  call delTabuList(rows_tabu)
+  call delTabuList(cols_tabu)
 end program bibd_ca
 
-subroutine randomCA_BIBD(is, optSteps)
+subroutine randomCA_BIBD(is, optSteps, rows_tabu, cols_tabu)
   use mtmod
   use incidence_structure
   use tabu_list
@@ -66,10 +72,7 @@ subroutine randomCA_BIBD(is, optSteps)
   integer inc_ratio, min_dim, max_dim, max_point
   integer lambda_row_delta
   integer lambda_col_delta
-
-  call mkTabuList(rows_tabu, 1)
-  call mkTabuList(cols_tabu, 1)
-
+  
   min_dim = min(is%v, is%b)
   max_dim = max(is%v, is%b)
   max_point = max(is%r, is%k)
@@ -78,31 +81,31 @@ subroutine randomCA_BIBD(is, optSteps)
   maxChangeFactorDormant = inc_ratio*(is%v + is%b - 2) + is%sum_ideal + is%r + is%k
   maxChangeFactorActive = inc_ratio*(is%v + is%b - 2) + is%sum_total + is%v + is%b
 
-  row = randomInt(is%v)+1
-  col = randomInt(is%b)+1
 
   ! Rince and repeat until BIBD
   do while(.true.)
      call increment(is%generations,1)
+     
      if (isBIBD(is)) return
 
      do i = optSteps, optSteps, -1
         if(nOpt(i, i, is)) return
      enddo
 
+     row = randomInt(is%v)+1
+     col = randomInt(is%b)+1
+
      changeFactor = 0
 
-     do while(TabuList_contains(rows_tabu, row))
-        row = randomInt(is%v)+1
-        call pop(rows_tabu)
-        call push(rows_tabu, row)
+     do while(is_in_list(rows_tabu, row))
+        row = randomInt(is%v)+1    
      enddo
+     call push(rows_tabu, row)
 
-     do while(TabuList_contains(cols_tabu, col))
+     do while(is_in_list(cols_tabu, col))
         col = randomInt(is%b)+1
-        call pop(cols_tabu)
-        call push(cols_tabu, col)
      enddo
+     call push(cols_tabu, col)
 
      ! Combined loop for 1:is%v and 1:is%b
      do point=1,max_dim

@@ -14,9 +14,8 @@ module tabu_list
         type(TabuList) tl
         integer length
 
-        tl%head=1
-        tl%tail=1
-        tl%length=length
+        tl%head = 1
+        tl%length = length
         allocate(tl%tabus(1:length))
         tl%tabus(1:length)=-1
     end subroutine
@@ -24,32 +23,27 @@ module tabu_list
     subroutine push(tl, val)
         type(TabuList) tl
         integer length, val
-        tl%tabus(tl%head)=val
+
+        tl%tabus(tl%head) = val
         call increment(tl%head, 1)
-        if(tl%head == tl%length) tl%head=1
+        if(tl%head > tl%length) tl%head = 1
     end subroutine
 
-    subroutine pop(tl)
-        type(TabuList) tl
-        integer length
-
-        tl%tabus(tl%tail)=-1
-        call increment(tl%tail, 1)
-        if(tl%tail == tl%length) tl%tail=1
-    end subroutine
-
-    subroutine dcTabuList(tl)
+    subroutine delTabuList(tl)
         type(TabuList) tl
         deallocate(tl%tabus)
     end subroutine
 
-    logical function TabuList_contains(tl, val) 
+    logical function is_in_list(tl, val) 
         type(TabuList) tl
         integer i, val
-        do i=1, tl%length
-            if(tl%tabus(i)==val) TabuList_contains=.True.
-        enddo
-        TabuList_contains=.False.
+        do i = 1, tl%length
+            if(tl%tabus(i) .eq. val) then 
+                is_in_list = .True.
+                return
+            endif
+        enddo        
+        is_in_list=.False.
         return
     end function
 
