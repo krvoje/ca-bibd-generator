@@ -8,7 +8,7 @@ program bibd_ca
   implicit none
 
   type(IncidenceStructure) is
-  integer optSteps
+  integer opt_steps
   integer v,k,lmbd
   integer i,j
   real r_r,b_r
@@ -18,7 +18,7 @@ program bibd_ca
   if (command_argument_count() /= 3 .and. command_argument_count() /= 4) then
      write (*,*) "Usage:"
      call get_command_argument(0,f)
-     write (*,*) f ,"v k λ [optSteps]"
+     write (*,*) f ,"v k λ [opt_steps]"
      stop
   else
      call get_command_argument(1,f)
@@ -28,19 +28,20 @@ program bibd_ca
      call get_command_argument(3,f)
      read (f,"(I10)") lmbd
      if(command_argument_count() == 4) then
-        call get_command_argument(4,f)
-        read (f,"(I10)") optSteps
+         call get_command_argument(4,f)
+         read (f,"(I10)") opt_steps
      else
-        optSteps=2
+         opt_steps=2
      endif
   endif
 
   call seedRandomGenerator()
   call construct(is,v,k,lmbd)
 
-  if(optSteps > is%v * is%b) optSteps = is%v*is%b
+  if(opt_steps > is%v * is%b) opt_steps = is%v*is%b
 
-  call randomCA_BIBD(is,optSteps)
+  call randomCA_BIBD(is,opt_steps)
+
   print *, "An incidence matrix for the given parameters found:"
   call writeMatrix(is)
 
@@ -48,7 +49,7 @@ program bibd_ca
   call deconstruct(is)
 end program bibd_ca
 
-subroutine randomCA_BIBD(is, optSteps)
+subroutine randomCA_BIBD(is, opt_steps)
   use mtmod
   use incidence_structure
   use n_opt
@@ -56,7 +57,7 @@ subroutine randomCA_BIBD(is, optSteps)
   implicit none
 
   type(IncidenceStructure) is
-  integer optSteps
+  integer opt_steps
 
   integer changeFactor, maxChangeFactorActive, maxChangeFactorDormant
   integer maxChangeFactor
@@ -77,10 +78,7 @@ subroutine randomCA_BIBD(is, optSteps)
   do while(.true.)
      call increment(is%generations,1)
      if (isBIBD(is)) return
-
-     do i = optSteps, optSteps, -1
-        if(nOpt(i, i, is)) return
-     enddo
+     if(nOpt(opt_steps, opt_steps, is)) return
 
      changeFactor = 0
 
