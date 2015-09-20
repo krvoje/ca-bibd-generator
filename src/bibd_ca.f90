@@ -10,7 +10,7 @@ program bibd_ca
 
   type(IncidenceStructure) is
   type(TabuList) rows_tabu, cols_tabu
-  integer optSteps
+  integer opt_steps
   integer v,k,lmbd
   integer i,j
   real r_r,b_r
@@ -21,7 +21,7 @@ program bibd_ca
   if (command_argument_count() /= 5) then
      write (*,*) "Usage:"
      call get_command_argument(0,f)
-     write (*,*) f ,"v k λ optSteps tabuSize"
+     write (*,*) f ,"v k λ opt_steps tabu_size"
      stop
   else
      call get_command_argument(1,f)
@@ -31,7 +31,7 @@ program bibd_ca
      call get_command_argument(3,f)
      read (f,"(I10)") lmbd
      call get_command_argument(4,f)
-     read (f,"(I10)") optSteps
+     read (f,"(I10)") opt_steps
      call get_command_argument(5,f)
      read (f,"(I10)") tabu_size
   endif
@@ -39,12 +39,12 @@ program bibd_ca
   call seedRandomGenerator()
   call construct(is,v,k,lmbd)
 
-  if(optSteps > is%v * is%b) optSteps = is%v*is%b
+  if(opt_steps > is%v * is%b) opt_steps = is%v*is%b
 
   call mkTabuList(rows_tabu, tabu_size)
   call mkTabuList(cols_tabu, tabu_size)
 
-  call randomCA_BIBD(is, optSteps, rows_tabu, cols_tabu)
+  call randomCA_BIBD(is, opt_steps, rows_tabu, cols_tabu)
   print *, "An incidence matrix for the given parameters found:"
   call writeMatrix(is)
 
@@ -54,7 +54,7 @@ program bibd_ca
   call delTabuList(cols_tabu)
 end program bibd_ca
 
-subroutine randomCA_BIBD(is, optSteps, rows_tabu, cols_tabu)
+subroutine randomCA_BIBD(is, opt_steps, rows_tabu, cols_tabu)
   use mtmod
   use incidence_structure
   use tabu_list
@@ -64,7 +64,7 @@ subroutine randomCA_BIBD(is, optSteps, rows_tabu, cols_tabu)
 
   type(IncidenceStructure) is
   type(TabuList) rows_tabu, cols_tabu
-  integer optSteps
+  integer opt_steps
 
   integer changeFactor, maxChangeFactorActive, maxChangeFactorDormant
   integer maxChangeFactor
@@ -87,10 +87,7 @@ subroutine randomCA_BIBD(is, optSteps, rows_tabu, cols_tabu)
      call increment(is%generations,1)
      
      if (isBIBD(is)) return
-
-     do i = optSteps, optSteps, -1
-        if(nOpt(i, i, is)) return
-     enddo
+     if(nOpt(opt_steps, opt_steps, is)) return
 
      row = randomInt(is%v)+1
      col = randomInt(is%b)+1
