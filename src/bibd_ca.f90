@@ -85,37 +85,33 @@ subroutine randomCA_BIBD(is, opt_steps)
      row = randomInt(is%v)+1
      col = randomInt(is%b)+1
 
-     ! Not really sure why, but this block below really speeds up the convergence
-     do point=1,max_dim
+     do point=1, is%v
         lambda_row_delta = is%lambda - is%row_intersection(row, point)
-        if(point <= is%v) then
-            if(lambda_row_delta /= 0) then
-                call increment(changefactor, inc_ratio)
-            else
-                if(is%v >= is%b) call decrement(changeFactor, inc_ratio)
-            endif
+        if(lambda_row_delta /= 0) then
+            call increment(changefactor, inc_ratio)
+        else
+            if(is%v >= is%b) call decrement(changeFactor, inc_ratio)
         endif
-
+     enddo
+     do point=1, is%b
         lambda_col_delta = is%lambda - is%col_intersection(col, point)
-        if(point <= is%b) then
-            if(lambda_col_delta /= 0) then
-                call increment(changefactor, inc_ratio)
-            else
-                if(is%v < is%b) call decrement(changeFactor, inc_ratio)
-            endif
+        if(lambda_col_delta /= 0) then
+            call increment(changefactor, inc_ratio)
+        else
+            if(is%v < is%b) call decrement(changeFactor, inc_ratio)
         endif
      enddo
 
      if (dormant(is,row,col)) then
-        if (is%sum_total /= is%sum_ideal) call increment(changefactor, is%sum_ideal - is%sum_total)
-        if (is%sum_in_row(row) /= is%r) call increment(changefactor, is%r - is%sum_in_row(row))
-        if (is%sum_in_col(col) /= is%k) call increment(changefactor, is%k - is%sum_in_col(col))
+        call increment(changefactor, is%sum_ideal - is%sum_total)
+        call increment(changefactor, is%r - is%sum_in_row(row))
+        call increment(changefactor, is%k - is%sum_in_col(col))
 
         if(randomInt(maxChangeFactorDormant) < changeFactor) call flip(is,row,col)
      else if (active(is,row,col)) then
-        if (is%sum_total /= is%sum_ideal) call increment(changefactor, is%sum_total - is%sum_ideal)
-        if (is%sum_in_row(row) /= is%r) call increment(changefactor, is%sum_in_row(row) - is%r)
-        if (is%sum_in_col(col) /= is%k) call increment(changefactor, is%sum_in_col(col) - is%k)
+        call decrement(changefactor, is%sum_ideal - is%sum_total)
+        call decrement(changefactor, is%r - is%sum_in_row(row))
+        call decrement(changefactor, is%k - is%sum_in_col(col))
 
         if(randomInt(maxChangeFactorActive) < changeFactor) call flip(is,row,col)
      endif
