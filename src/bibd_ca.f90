@@ -114,7 +114,7 @@ subroutine randomCA_BIBD(is, optSteps, rows_tabu, cols_tabu)
             if(lambda_row_delta /= 0) then
                 call increment(changefactor, inc_ratio)
             else
-                if(is%b < is%v) call decrement(changeFactor, inc_ratio)
+                if(is%v >= is%b) call decrement(changeFactor, inc_ratio)
             endif
         endif
 
@@ -123,7 +123,7 @@ subroutine randomCA_BIBD(is, optSteps, rows_tabu, cols_tabu)
             if(lambda_col_delta /= 0) then
                 call increment(changefactor, inc_ratio)
             else
-                if(is%b >= is%v) call decrement(changeFactor, inc_ratio)
+                if(is%v < is%b) call decrement(changeFactor, inc_ratio)
             endif
         endif
      enddo
