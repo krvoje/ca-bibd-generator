@@ -90,7 +90,6 @@ subroutine randomCA_BIBD(is, optSteps)
      ! Not really sure why, but this block below really speeds up the convergence
      do point=1,max_dim
         lambda_row_delta = is%lambda - is%row_intersection(row, point)
-        lambda_col_delta = is%lambda - is%col_intersection(col, point)
         if(point <= is%v) then
             if(lambda_row_delta /= 0) then
                 call increment(changefactor, inc_ratio)
@@ -99,6 +98,7 @@ subroutine randomCA_BIBD(is, optSteps)
             endif
         endif
 
+        lambda_col_delta = is%lambda - is%col_intersection(col, point)
         if(point <= is%b) then
             if(lambda_col_delta /= 0) then
                 call increment(changefactor, inc_ratio)
