@@ -68,11 +68,10 @@ subroutine randomCA_BIBD(is, opt_steps)
 
   min_dim = min(is%v, is%b)
   max_dim = max(is%v, is%b)
-  inc_ratio = max_dim / min_dim
+  inc_ratio = 1
 
   maxChangeFactorDormant = inc_ratio*(is%v + is%b - 2) + is%sum_ideal + is%r + is%k
   maxChangeFactorActive = inc_ratio*(is%v + is%b - 2) + is%sum_total + is%v + is%b
-
 
   ! Rince and repeat until BIBD
   do while(.true.)

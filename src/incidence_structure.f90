@@ -5,20 +5,20 @@ module incidence_structure
   implicit none
 
   type IncidenceStructure
-     integer, dimension(:,:), allocatable:: incidences ! incidences
-     integer, dimension(:,:), allocatable:: row_intersection ! dp
-     integer, dimension(:,:), allocatable:: col_intersection ! dp
-     integer, dimension(:), allocatable:: sum_in_row ! sum_in_row
-     integer, dimension(:), allocatable:: sum_in_col ! sum_in_col
-     integer v !v
-     integer r!r
-     integer k!k
-     integer b !b
-     integer lambda!lmbd
+     integer, dimension(:,:), allocatable:: incidences 
+     integer, dimension(:,:), allocatable:: row_intersection 
+     integer, dimension(:,:), allocatable:: col_intersection
+     integer, dimension(:), allocatable:: sum_in_row 
+     integer, dimension(:), allocatable:: sum_in_col
+     integer v 
+     integer r
+     integer k
+     integer b
+     integer lambda
      
-     ! Heuristic helper vals
+     ! Heuristic helper vals, computed in the construct method
      integer sum_total     
-     integer sum_ideal ! Should be VERTICES_PER_BLOC*VERTICES
+     integer sum_ideal
      integer heuristic_distance
      integer max_heuristic_distance
 
@@ -112,7 +112,7 @@ contains
     type(IncidenceStructure) IS
     integer row,col
 
-    if(is%incidences(row,col)>0) then
+    if(is%incidences(row,col) /= 0) then
        active=.True.
     else
        active=.False.
@@ -125,7 +125,7 @@ contains
     type(IncidenceStructure) IS
     integer row,col
 
-    if(is%incidences(row,col)>0) then
+    if(is%incidences(row,col) /= 0) then
        dormant=.False.
     else
        dormant=.true.
@@ -140,7 +140,7 @@ contains
     type(IncidenceStructure) IS
     integer row,col
     integer otherRow,otherCol,newVal
-    !!write (*,*) "DEBUG: flip"
+
     newVal=abs(is%incidences(row,col)-1)
     is%incidences(row,col)=newVal
     if (newVal==0) then
