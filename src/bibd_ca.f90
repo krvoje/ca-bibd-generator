@@ -59,12 +59,10 @@ subroutine randomCA_BIBD(is, opt_steps)
   type(IncidenceStructure) is
   integer opt_steps
 
-  integer changeFactor, maxChangeFactorActive, maxChangeFactorDormant
-  integer maxChangeFactor
-  integer row, col, i, point
+  integer maxChangeFactorActive, maxChangeFactorDormant
+  integer row, col
+  integer i, point
   integer inc_ratio, min_dim, max_dim
-  integer lambda_row_delta
-  integer lambda_col_delta
 
   min_dim = min(is%v, is%b)
   max_dim = max(is%v, is%b)
@@ -79,40 +77,18 @@ subroutine randomCA_BIBD(is, opt_steps)
      if (isBIBD(is)) return
      if(nOpt(opt_steps, opt_steps, is)) return
 
-     changeFactor = 0
-
      row = randomInt(is%v)+1
      col = randomInt(is%b)+1
 
-     do point=1, is%v
-        lambda_row_delta = is%lambda - is%row_intersection(row, point)
-        if(lambda_row_delta /= 0) then
-            call increment(changefactor, inc_ratio)
-        else
-            if(is%v >= is%b) call decrement(changeFactor, inc_ratio)
-        endif
-     enddo
-     do point=1, is%b
-        lambda_col_delta = is%lambda - is%col_intersection(col, point)
-        if(lambda_col_delta /= 0) then
-            call increment(changefactor, inc_ratio)
-        else
-            if(is%v < is%b) call decrement(changeFactor, inc_ratio)
-        endif
-     enddo
-
-     if (dormant(is,row,col)) then
-        call increment(changefactor, is%sum_ideal - is%sum_total)
-        call increment(changefactor, is%r - is%sum_in_row(row))
-        call increment(changefactor, is%k - is%sum_in_col(col))
-
-        if(randomInt(maxChangeFactorDormant) < changeFactor) call flip(is,row,col)
-     else if (active(is,row,col)) then
-        call decrement(changefactor, is%sum_ideal - is%sum_total)
-        call decrement(changefactor, is%r - is%sum_in_row(row))
-        call decrement(changefactor, is%k - is%sum_in_col(col))
-
-        if(randomInt(maxChangeFactorActive) < changeFactor) call flip(is,row,col)
+     if(dormant(is,row,col)&
+         .and. randomInt(maxChangeFactorDormant) < changeFactor(is,row,col,inc_ratio)) then
+        call flip(is,row,col)
      endif
+
+     if(active(is,row,col)&
+         .and. randomInt(maxChangeFactorActive) < changeFactor(is,row,col,inc_ratio)) then
+        call flip(is,row,col)
+     endif
+
   enddo
 end subroutine randomCA_BIBD
