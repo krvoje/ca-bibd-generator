@@ -59,17 +59,24 @@ subroutine randomCA_BIBD(is, opt_steps)
   type(IncidenceStructure) is
   integer opt_steps
 
-  integer maxChangeFactorActive, maxChangeFactorDormant
-  integer row, col
+  integer maxChangeFactor, changeFactor
+  integer row, active_col, dormant_col
   integer i, point
   integer inc_ratio, min_dim, max_dim
+  integer cfa, cfd
+
+  integer v,r,b,k,lambda
+
+  v=is%v
+  r=is%r
+  b=is%b
+  k=is%k
+  lambda=is%lambda
 
   min_dim = min(is%v, is%b)
   max_dim = max(is%v, is%b)
-  inc_ratio = 1
 
-  maxChangeFactorDormant = inc_ratio*(is%v + is%b - 2) + is%sum_ideal + is%r + is%k
-  maxChangeFactorActive = inc_ratio*(is%v + is%b - 2) + is%sum_total + is%v + is%b
+  maxChangeFactor = (v-1)*(abs(r-lambda)) + b
 
   ! Rince and repeat until BIBD
   do while(.true.)
@@ -77,18 +84,72 @@ subroutine randomCA_BIBD(is, opt_steps)
      if (isBIBD(is)) return
      if(nOpt(opt_steps, opt_steps, is)) return
 
+     ! Pick a random row, and an active and a dormant cell in it
      row = randomInt(is%v)+1
-     col = randomInt(is%b)+1
+     active_col = randomInt(is%b)+1
+     do while(.not.active(is,row,active_col))
+        active_col = randomInt(is%b)+1
+     enddo
 
-     if(dormant(is,row,col)&
-         .and. randomInt(maxChangeFactorDormant) < changeFactor(is,row,col,inc_ratio)) then
-        call flip(is,row,col)
+     dormant_col = randomInt(is%b)+1
+     do while(.not.dormant(is,row,dormant_col))
+        dormant_col = randomInt(is%b)+1
+     enddo
+
+     cfD = changeFactor(is,row,dormant_col)
+     cfA = changeFactor(is,row,active_col)
+
+     i=randomInt(maxChangefactor)
+     if(i < cfD&
+          .and. i < cfA) then
+        ! Exchange places
+        call flip(is,row,active_col)
+        call flip(is,row,dormant_col)
      endif
-
-     if(active(is,row,col)&
-         .and. randomInt(maxChangeFactorActive) < changeFactor(is,row,col,inc_ratio)) then
-        call flip(is,row,col)
-     endif
-
+     
   enddo
 end subroutine randomCA_BIBD
+
+integer function changeFactor(is,row,col)  
+  use incidence_structure
+  implicit none
+  
+  type(IncidenceStructure) is
+  integer row,col
+  
+  integer delta
+  integer i
+
+  changefactor = 0
+
+  ! v * (abs(lambda - r))
+  do i=1, is%v
+     if(i .eq. row) cycle
+     delta = is%lambda - is%row_intersection(row, i)
+
+     if(active(is,row,col).and.active(is,i,col).and.delta<0) then
+        call decrement(changefactor, delta)
+     else if(dormant(is,row,col).and.active(is,i,col).and.delta>0) then
+        call increment(changefactor, delta)
+     endif
+  enddo
+
+  !do i=1, is%b
+  !   if(i .eq. col) cycle
+  !   delta = is%lambda - is%col_intersection(col, i)
+  !   if(active(is,row,col).and.active(is,row,i).and.delta<0) then
+  !      call decrement(changefactor, delta)
+  !   else if(dormant(is,row,col).and.active(is,col,i).and.delta>0) then
+  !      call increment(changefactor, delta)
+  !   endif
+  !enddo
+
+  delta = is%k - is%sum_in_col(col)
+  if (active(is,row,col)) then
+     call decrement(changefactor, delta)
+  else if (dormant(is,row,col)) then
+     call increment(changefactor, delta)
+  endif
+
+  return
+end function changeFactor

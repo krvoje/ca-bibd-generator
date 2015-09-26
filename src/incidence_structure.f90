@@ -8,7 +8,6 @@ module incidence_structure
      integer, dimension(:,:), allocatable:: incidences
      integer, dimension(:,:), allocatable:: row_intersection
      integer, dimension(:,:), allocatable:: col_intersection
-     integer, dimension(:), allocatable:: sum_in_row
      integer, dimension(:), allocatable:: sum_in_col
      integer v
      integer r
@@ -18,7 +17,6 @@ module incidence_structure
 
      ! Heuristic helper vals, computed in the construct method
      integer sum_total
-     integer sum_ideal
      integer heuristic_distance
      integer max_heuristic_distance
 
@@ -53,21 +51,16 @@ contains
     allocate(is%incidences(1:is%v,1:is%b))
     allocate(is%row_intersection(1:is%v,1:is%v))
     allocate(is%col_intersection(1:is%b,1:is%b))
-    allocate(is%sum_in_row(1:is%v))
     allocate(is%sum_in_col(1:is%b))
 
     is%incidences(1:is%v,1:is%b)=0
     is%incidences(1:is%v,1:is%r)=1
     is%row_intersection(1:is%v,1:is%v)=0
     is%col_intersection(1:is%b,1:is%b)=0
-    is%sum_in_row(1:is%v)=0
     is%sum_in_col(1:is%b)=0
     is%sum_total=0
 
-    is%sum_ideal=is%k*is%b
     is%generations=0
-
-    call writeMatrix(is)
 
     call updateCache(IS)
   end subroutine construct
@@ -76,10 +69,6 @@ contains
     type(IncidenceStructure) IS
 
     integer i,j
-
-    do i=1,is%v
-       is%sum_in_row(i)=sum(is%incidences(i,:))
-    enddo
 
     do j=1,is%b
        is%sum_in_col(j)=sum(is%incidences(:,j))
@@ -97,8 +86,6 @@ contains
        enddo
     enddo
 
-    is%sum_total=sum(is%sum_in_row(1:is%v))
-
     call calculateHeuristicDistance(IS)
   end subroutine updateCache
 
@@ -107,7 +94,6 @@ contains
     deallocate(is%incidences)
     deallocate(is%row_intersection)
     deallocate(is%col_intersection)
-    deallocate(is%sum_in_row)
     deallocate(is%sum_in_col)
   end subroutine deconstruct
 
@@ -148,14 +134,12 @@ contains
     is%incidences(row,col)=newVal
     if (newVal==0) then
        call decrement(is%sum_total,1)
-       call decrement(is%sum_in_row(row),1)
        call decrement(is%sum_in_col(col),1)
        call decrement(is%row_intersection(row,row),1)
        call decrement(is%col_intersection(col,col),1)
     endif
     if (newVal==1) then
        call increment(is%sum_total,1)
-       call increment(is%sum_in_row(row),1)
        call increment(is%sum_in_col(col),1)
        call increment(is%row_intersection(row,row),1)
        call increment(is%col_intersection(col,col),1)
@@ -195,10 +179,6 @@ contains
 
     integer i,j
 
-    is%heuristic_distance = (abs(is%sum_total - is%sum_ideal))
-    do i=1,is%v
-       call increment(is%heuristic_distance, abs(is%sum_in_row(i) - is%r))
-    enddo
     do i=1,is%b
        call increment(is%heuristic_distance, abs(is%sum_in_col(i) - is%k))
     enddo
@@ -208,7 +188,7 @@ contains
           call increment(is%heuristic_distance, abs(is%row_intersection(i,j) - is%lambda))
        enddo
     enddo
-    is%max_heuristic_distance = is%sum_total + (is%v - 1) + 2
+    is%max_heuristic_distance = is%b + is%r*(is%v-1)
   end subroutine calculateHeuristicDistance
 
   !!***
@@ -225,21 +205,6 @@ contains
     !     print *, "hd: ", is%max_heuristic_distance, "/", is%heuristic_distance
     !     call writeMatrix(IS)
     ! endif
-
-    if(is%sum_total /= is%sum_ideal) then
-       isBIBD=.False.
-       !print *, "Sum is non-ideal", is%sum_total, is%sum_ideal
-       return
-    endif
-
-    ! If the incidence matrix has a row with sum non-equal to r, this is not a BIBD
-    do i=1,is%v
-       if(is%sum_in_row(i)/=is%r) then
-          isBIBD=.False.
-          !print *, "Sum in row is non-ideal", is%sum_in_row(i), is%r
-          return
-       endif
-    enddo
 
     ! If the incidence matrix has a row with sum non-equal to k, this is not a BIBD
     do i=1,is%b
@@ -277,58 +242,9 @@ contains
        do col=1,is%b
           write (*,"(I1)",advance='no') is%incidences(row,col)
        enddo
-       write (*,"(A1)",advance='no') "-"
-       write (*,"(I1)",advance='no') is%sum_in_row(row)
        print *
     enddo
-    do col=1,is%b
-       write (*,"(A1)",advance='no') "|"
-    enddo
-    print *
-    do col=1,is%b
-       write (*,"(I1)",advance='no') is%sum_in_col(col)
-    enddo
-    print *
     write(*,*),"]"
   end subroutine writeMatrix
-
-  integer function changeFactor(is,row,col,inc_ratio)
-
-    type(IncidenceStructure) is
-    integer row,col,inc_ratio
-    integer lambda_row_delta, lambda_col_delta
-    integer point
-
-    changefactor=0
-
-    do point=1, is%v
-       lambda_row_delta = is%lambda - is%row_intersection(row, point)
-       if(lambda_row_delta /= 0) then
-          call increment(changefactor, inc_ratio)
-       else
-          if(is%v >= is%b) call decrement(changeFactor, inc_ratio)
-       endif
-    enddo
-    do point=1, is%b
-       lambda_col_delta = is%lambda - is%col_intersection(col, point)
-       if(lambda_col_delta /= 0) then
-          call increment(changefactor, inc_ratio)
-       else
-          if(is%v < is%b) call decrement(changeFactor, inc_ratio)
-       endif
-    enddo
-
-    if (dormant(is,row,col)) then
-       call increment(changefactor, is%sum_ideal - is%sum_total)
-       call increment(changefactor, is%r - is%sum_in_row(row))
-       call increment(changefactor, is%k - is%sum_in_col(col))
-    else if (active(is,row,col)) then
-       call decrement(changefactor, is%sum_ideal - is%sum_total)
-       call decrement(changefactor, is%r - is%sum_in_row(row))
-       call decrement(changefactor, is%k - is%sum_in_col(col))
-    endif
-    changeFactor = changeFactor
-    return
-  end function changeFactor
 
 end module incidence_structure
