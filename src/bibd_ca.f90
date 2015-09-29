@@ -129,8 +129,12 @@ integer function changeFactor(is,row,col)
 
      if(active(is,row,col).and.active(is,i,col).and.delta<0) then
         call decrement(changefactor, delta)
+     else if(active(is,row,col).and.dormant(is,i,col).and.delta<0) then
+        call increment(changefactor, delta)
      else if(dormant(is,row,col).and.active(is,i,col).and.delta>0) then
         call increment(changefactor, delta)
+     else if(dormant(is,row,col).and.dormant(is,i,col).and.delta>0) then
+        call decrement(changefactor, delta)
      endif
   enddo
 
