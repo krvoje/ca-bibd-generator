@@ -78,6 +78,9 @@ subroutine randomCA_BIBD(is, opt_steps)
 
   maxChangeFactor = (v-1)*(abs(r-lambda)) + b
 
+  is%incidences(1:v,1:r)=1
+  call updateCache(is)
+
   ! Rince and repeat until BIBD
   do while(.true.)
      call increment(is%generations,1)
@@ -100,8 +103,7 @@ subroutine randomCA_BIBD(is, opt_steps)
      cfA = changeFactor(is,row,active_col)
 
      i=randomInt(maxChangefactor)
-     if(i < cfD&
-          .and. i < cfA) then
+     if(i<cfD .and. i<cfA) then
         ! Exchange places
         call flip(is,row,active_col)
         call flip(is,row,dormant_col)
