@@ -192,10 +192,10 @@ contains
 
     integer i,j
 
-    is%heuristic_distance = (abs(is%sum_total - is%sum_ideal))
-    do i=1,is%v
-       call increment(is%heuristic_distance, abs(is%sum_in_row(i) - is%r))
-    enddo
+    !is%heuristic_distance = (abs(is%sum_total - is%sum_ideal))
+    !do i=1,is%v
+    !   call increment(is%heuristic_distance, abs(is%sum_in_row(i) - is%r))
+    !enddo
     do i=1,is%b
        call increment(is%heuristic_distance, abs(is%sum_in_col(i) - is%k))
     enddo
@@ -205,7 +205,7 @@ contains
           call increment(is%heuristic_distance, abs(is%row_intersection(i,j) - is%lambda))
        enddo
     enddo
-    is%max_heuristic_distance = is%sum_total + (is%v - 1) + 2
+    is%max_heuristic_distance = is%b*(is%v - is%k) + (is%v - 1)*(is%r - is%lambda)
   end subroutine calculateHeuristicDistance
 
   !!***

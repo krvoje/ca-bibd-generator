@@ -19,7 +19,7 @@ contains
     ! Skip criteria for the n-opt:
     ! We reached the end of the n-opt descent, return
     if(n<1) return
-    if(abs(is%heuristic_distance) > (is%max_heuristic_distance-is%sum_ideal)*n / 2) return
+    if(abs(is%heuristic_distance) > is%max_heuristic_distance*n / 2) return
     ! For each row try exchanging each two opposite-state cells
     do row=1,is%v
        do col1=1,is%b - 1
