@@ -31,7 +31,7 @@ program bibd_ca
          call get_command_argument(4,f)
          read (f,"(I10)") opt_steps
      else
-         opt_steps=2
+         opt_steps=0
      endif
   endif
 

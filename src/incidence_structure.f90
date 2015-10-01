@@ -196,7 +196,6 @@ contains
     is%heuristic_distance = 0
     
     do i=1,is%b
-       if
        call increment(is%heuristic_distance,abs(is%sum_in_col(i) - is%k))
     enddo
     do i=1,is%v
