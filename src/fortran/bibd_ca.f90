@@ -157,5 +157,7 @@ integer function changeFactor(is,row,col)
      call increment(changefactor, delta)
   endif
 
+  changeFactor = max(changeFactor, 0)
+  
   return
 end function changeFactor
