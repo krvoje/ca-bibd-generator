@@ -43,6 +43,7 @@ public class IncidenceStructure {
 		this.sumTotal = 0;
 
 		this.updateCache();
+		System.out.println(String.format("(v, k, λ, b, r) = (%d, %d, %d, %d, %d)", v, k, lambda, b, r));
 	}
 	
 	public boolean isBIBD() {

@@ -10,7 +10,7 @@ public class RandomCABIBD {
         int v,k,lambda;
         if(args.length !=3) {
             System.out.println("Usage: ");
-            System.out.println("java -jar ca-bibd.jar v k lambda [optSteps]");
+            System.out.println("java -jar ca-bibd.jar v k lambda");
         }
         else {
             v = Integer.parseInt(args[0]);
