@@ -10,7 +10,7 @@ public class IncidenceStructure {
 	
 	public final int v,r,b,k,lambda;
 	public int sumTotal;
-	public int sum_ideal;
+	public int sumIdeal;
 	
 	public int heuristicDistance;
 	public int maxHeuristicDistance;
@@ -43,11 +43,11 @@ public class IncidenceStructure {
 		this.sumTotal = 0;
 
 		this.updateCache();
-		System.out.println(String.format("(v, k, λ, b, r) = (%d, %d, %d, %d, %d)", v, k, lambda, b, r));
+		System.out.println(String.format("(v=%d, k=%d, λ=%d, b=%d, r=%d)", v, k, lambda, b, r));
 	}
 	
 	public boolean isBIBD() {
-		/*if(sumTotal != sum_ideal) {
+		if(sumTotal != sumIdeal) {
 			return false;
 		}
 
@@ -56,7 +56,7 @@ public class IncidenceStructure {
 			if(sumInRow[row] != r) {
 				return false;
 			}
-		}*/
+		}
 
 		for(int col=0; col<b; col++)
 		{

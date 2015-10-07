@@ -8,7 +8,7 @@ public class RandomCABIBD {
 
     public static void main(String[] args) throws Exception {
         int v,k,lambda;
-        if(args.length !=3) {
+        if(args.length != 3) {
             System.out.println("Usage: ");
             System.out.println("java -jar ca-bibd.jar v k lambda");
         }
@@ -34,20 +34,15 @@ public class RandomCABIBD {
         }
         is.updateCache();
 
+
         while(true)
         {
             is.generations++;
             if(is.isBIBD()) return;
 
             int row = rnd.nextInt(is.v);
-
-            int activeCol = rnd.nextInt(is.b);
-            while(!is.active(row, activeCol))
-                activeCol = rnd.nextInt(is.b);
-
-            int dormantCol = rnd.nextInt(is.b);
-            while(!is.dormant(row, dormantCol))
-                dormantCol = rnd.nextInt(is.b);
+            int activeCol = randomActiveIn(is, row);
+            int dormantCol = randomDormantIn(is, row);
 
             int cfa = changeFactor(is,row,activeCol);
             int cfd = changeFactor(is,row,dormantCol);
@@ -86,5 +81,19 @@ public class RandomCABIBD {
             changeFactor += delta;
 
         return changeFactor >= 0 ? changeFactor : 0;
+    }
+
+    public int randomActiveIn(IncidenceStructure is, int row) {
+        int col = rnd.nextInt(is.b);
+        while(!is.active(row, col))
+            col = rnd.nextInt(is.b);
+        return col;
+    }
+
+    public int randomDormantIn(IncidenceStructure is, int row) {
+        int col = rnd.nextInt(is.b);
+        while(!is.dormant(row, col))
+            col = rnd.nextInt(is.b);
+        return col;
     }
 }
