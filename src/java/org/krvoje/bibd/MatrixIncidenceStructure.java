@@ -8,7 +8,7 @@ public class MatrixIncidenceStructure implements IncidenceStructure {
 	private int[] sumInRow;
 	private int[] sumInCol;
 	
-	public final int v,r,b,k,lambda;
+	private final int v, r, b, k, lambda;
 	private int sumTotal;
 	private int sumIdeal;
 	
@@ -39,11 +39,63 @@ public class MatrixIncidenceStructure implements IncidenceStructure {
 		this.sumInRow = new int[v];
 		this.sumInCol = new int[b];
 		this.sumTotal = 0;
+		this.sumIdeal = v*r;
+
+		for(int row=0; row<v; row++) {
+			for(int col =0; col <b; col++) {
+				this.incidences[row][col]=0;
+			}
+		}
 
 		this.updateCache();
 		System.out.println(String.format("(v=%d, k=%d, λ=%d, b=%d, r=%d)", v, k, lambda, b, r));
 	}
-	
+
+	@Override
+	public int v() {
+		return this.v;
+	}
+
+	@Override
+	public int r() {
+		return this.r;
+	}
+
+	@Override
+	public int b() {
+		return this.b;
+	}
+
+	@Override
+	public int k() {
+		return this.k;
+	}
+
+	@Override
+	public int vertices() {
+		return this.v;
+	}
+
+	@Override
+	public int verticesInBlock() {
+		return this.r;
+	}
+
+	@Override
+	public int blocks() {
+		return this.b;
+	}
+
+	@Override
+	public int blocksPerVertex() {
+		return this.k;
+	}
+
+	@Override
+	public int lambda() {
+		return this.lambda;
+	}
+
 	public boolean isBIBD() {
 		if(sumTotal != sumIdeal) {
 			return false;
@@ -90,7 +142,9 @@ public class MatrixIncidenceStructure implements IncidenceStructure {
 
 	@Override
 	public void setIncidence(int row, int col, boolean active) {
-		this.incidences[row][col] = active ? 1 : 0;
+		//this.incidences[row][col] = active ? 1 : 0;
+		if(!(this.active(row,col) && active))
+			this.flip(row,col);
 	}
 
 	@Override
@@ -141,7 +195,7 @@ public class MatrixIncidenceStructure implements IncidenceStructure {
 				colIntersection[col][otherCol] += increment;
 			}
 		}
-		//this.calculateHeuristicDistance();
+		this.calculateHeuristicDistance();
 	}
 
 	private void calculateHeuristicDistance()
@@ -162,11 +216,13 @@ public class MatrixIncidenceStructure implements IncidenceStructure {
 	
 	public void updateCache() {
 
+		this.sumTotal = 0;
 		for(int row=0; row<this.v; row++) {
 			this.sumInRow[row] = 0;
 			for(int col=0; col<this.b; col++) {
 				this.sumInRow[row] += incidences[row][col];
 			}
+			this.sumTotal += this.sumInRow[row];
 		}
 		for(int col=0; col<this.b; col++) {
 			this.sumInCol[col] = 0;
@@ -192,6 +248,8 @@ public class MatrixIncidenceStructure implements IncidenceStructure {
 				}
 			}
 		}
+
+		this.calculateHeuristicDistance();
 	}
 
 	public String toString()

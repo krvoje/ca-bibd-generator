@@ -5,6 +5,16 @@ package org.krvoje.bibd;
  */
 public interface IncidenceStructure {
 
+    public int v();
+    public int r();
+    public int b();
+    public int k();
+    public int vertices();
+    public int verticesInBlock();
+    public int blocks();
+    public int blocksPerVertex();
+    public int lambda();
+
     public boolean isBIBD();
     public void flip(int row, int col);
     public boolean active(int row, int col);
