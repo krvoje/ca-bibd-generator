@@ -17,7 +17,7 @@ public class RandomCABIBD {
             k = Integer.parseInt(args[1]);
             lambda = Integer.parseInt(args[2]);
 
-            IncidenceStructure bibd = new IncidenceStructure(v,k,lambda);
+            MatrixIncidenceStructure bibd = new MatrixIncidenceStructure(v,k,lambda);
             new RandomCABIBD().randomCaBibd(bibd);
 
             System.out.println("An incidence matrix for the given parameters found!");
@@ -25,20 +25,23 @@ public class RandomCABIBD {
         }
     }
 
-    private void randomCaBibd(IncidenceStructure is){
+    private void randomCaBibd(MatrixIncidenceStructure is){
         int maxChangeFactor = (is.v-1)*Math.abs(is.r-is.lambda) + is.b;
+        int generations = 0;
         for(int i=0; i<is.v; i++) {
             for (int j=0; j<is.r; j++) {
-                is.incidences[i][j]=1;
+                is.setIncidence(i,j,true);
             }
         }
         is.updateCache();
 
-
         while(true)
         {
-            is.generations++;
-            if(is.isBIBD()) return;
+            generations++;
+            if(is.isBIBD()) {
+                System.out.println("Generations: " + generations);
+                return;
+            }
 
             int row = rnd.nextInt(is.v);
             int activeCol = randomActiveIn(is, row);
@@ -55,11 +58,11 @@ public class RandomCABIBD {
         }
     }
 
-    private static int changeFactor(IncidenceStructure is, int row, int col) {
+    private static int changeFactor(MatrixIncidenceStructure is, int row, int col) {
         int changeFactor = 0;
         for(int otherRow=0; otherRow<is.v; otherRow++){
             if(otherRow==row) continue;
-            int delta = is.lambda - is.rowIntersection[row][otherRow];
+            int delta = is.lambda - is.rowIntersection(row, otherRow);
             if(delta < 0) {
                 if(is.active(row,col) && is.active(otherRow, col))
                     changeFactor -= delta;
@@ -74,7 +77,7 @@ public class RandomCABIBD {
             }
         }
 
-        int delta = is.k - is.sumInCol[col];
+        int delta = is.k - is.sumInCol(col);
         if(is.active(row,col))
             changeFactor -= delta;
         else if(is.dormant(row,col))
@@ -83,14 +86,14 @@ public class RandomCABIBD {
         return changeFactor >= 0 ? changeFactor : 0;
     }
 
-    public int randomActiveIn(IncidenceStructure is, int row) {
+    public int randomActiveIn(MatrixIncidenceStructure is, int row) {
         int col = rnd.nextInt(is.b);
         while(!is.active(row, col))
             col = rnd.nextInt(is.b);
         return col;
     }
 
-    public int randomDormantIn(IncidenceStructure is, int row) {
+    public int randomDormantIn(MatrixIncidenceStructure is, int row) {
         int col = rnd.nextInt(is.b);
         while(!is.dormant(row, col))
             col = rnd.nextInt(is.b);
