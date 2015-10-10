@@ -6,7 +6,8 @@ MOD=$(TARGET)/mod
 SRC_FORTRAN=src/fortran
 SRC_JAVA=src/java
 SWITCHES=-O3
-all: modules main java
+all: java
+fortran: modules main
 java:
 	mkdir -p $(TARGET_JAVA)
 	javac $(SRC_JAVA)/org/krvoje/bibd/*.java -d $(TARGET_JAVA)

@@ -49,7 +49,7 @@ public class RandomCABIBD {
             int cfa = changeFactor(is,row,activeCol);
             int cfd = changeFactor(is,row,dormantCol);
 
-            int doWeChange = rnd.nextInt(maxChangeFactor);
+            int doWeChange = rnd.nextInt(maxChangeFactor) / is.heuristicDistance();
             if(doWeChange < cfa && doWeChange < cfd) {
                 is.flip(row,activeCol);
                 is.flip(row,dormantCol);
@@ -68,7 +68,7 @@ public class RandomCABIBD {
                 else if(is.active(row,col) && is.dormant(otherRow, col))
                     changeFactor += delta;
             }
-            if(delta < 0) {
+            if(delta > 0) {
                 if(is.dormant(row, col) && is.active(otherRow, col))
                     changeFactor+=delta;
                 else if(is.dormant(row, col) && is.dormant(otherRow, col))
@@ -82,7 +82,7 @@ public class RandomCABIBD {
         else if(is.dormant(row,col))
             changeFactor += delta;
 
-        return changeFactor >= 0 ? changeFactor : 0;
+        return changeFactor;// >= 0 ? changeFactor : 0;
     }
 
     public int randomActiveIn(IncidenceStructure is, int row) {

@@ -1,19 +1,14 @@
 package org.krvoje.bibd;
 
-/**
- * Created by krvoje on 10/8/15.
- */
 public interface IncidenceStructure {
 
     public int v();
     public int r();
     public int b();
     public int k();
-    public int vertices();
-    public int verticesInBlock();
-    public int blocks();
-    public int blocksPerVertex();
     public int lambda();
+
+    public int heuristicDistance();
 
     public boolean isBIBD();
     public void flip(int row, int col);

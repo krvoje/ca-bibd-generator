@@ -72,28 +72,13 @@ public class MatrixIncidenceStructure implements IncidenceStructure {
 	}
 
 	@Override
-	public int vertices() {
-		return this.v;
-	}
-
-	@Override
-	public int verticesInBlock() {
-		return this.r;
-	}
-
-	@Override
-	public int blocks() {
-		return this.b;
-	}
-
-	@Override
-	public int blocksPerVertex() {
-		return this.k;
-	}
-
-	@Override
 	public int lambda() {
 		return this.lambda;
+	}
+
+	@Override
+	public int heuristicDistance() {
+		return this.heuristicDistance;
 	}
 
 	public boolean isBIBD() {
@@ -142,7 +127,6 @@ public class MatrixIncidenceStructure implements IncidenceStructure {
 
 	@Override
 	public void setIncidence(int row, int col, boolean active) {
-		//this.incidences[row][col] = active ? 1 : 0;
 		if(!(this.active(row,col) && active))
 			this.flip(row,col);
 	}
@@ -201,16 +185,26 @@ public class MatrixIncidenceStructure implements IncidenceStructure {
 	private void calculateHeuristicDistance()
 	{
 		this.heuristicDistance=0;
+		for(int row =0; row <this.v; row++)
+		{
+			heuristicDistance+= Math.abs(sumInRow[row]-this.r);
+		}
 		for(int col =0; col <this.b; col++)
 		{
 			heuristicDistance+= Math.abs(sumInCol[col]-this.k);
 		}
-		for(int row1=0; row1<this.v; row1++)
-			for(int row2=0; row2<this.v; row2++)
-			{
-				if(row1==row2) continue;
-				heuristicDistance+=Math.abs(rowIntersection[row1][row2]-this.lambda);
+		for(int row1=0; row1<this.v; row1++) {
+			for (int row2 = 0; row2 < this.v; row2++) {
+				if (row1 == row2) continue;
+				heuristicDistance += Math.abs(rowIntersection[row1][row2] - this.lambda);
 			}
+		}
+		for(int col1 =0; col1 <this.b; col1++) {
+			for (int col2 = 0; col2 < this.b; col2++) {
+				if (col1 == col2) continue;
+				heuristicDistance += Math.abs(colIntersection[col1][col2] - this.lambda);
+			}
+		}
 		this.maxHeuristicDistance=b*(v-k) + (v*v - v)*(r-lambda);
 	}
 	
