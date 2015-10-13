@@ -207,8 +207,8 @@ public class MatrixIncidenceStructure implements IncidenceStructure {
 		}
 		this.maxHeuristicDistance=b*(v-k) + (v*v - v)*(r-lambda);
 	}
-	
-	public void updateCache() {
+
+	private void updateCache() {
 
 		this.sumTotal = 0;
 		for(int row=0; row<this.v; row++) {
@@ -253,8 +253,15 @@ public class MatrixIncidenceStructure implements IncidenceStructure {
 			for(int j=0; j <b; j++) {
 				sb.append(incidences[i][j]);
 			}
+			sb.append("-"+sumInRow[i]);
 			sb.append("\n");
 		}
+		for(int j=0; j <b; j++)
+			sb.append("|");
+		sb.append("\n");
+		for(int j=0; j <b; j++)
+			sb.append(sumInCol[j]);
+		sb.append("\n");
 		return sb.toString();
 	}
 }
