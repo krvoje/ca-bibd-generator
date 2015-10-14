@@ -199,12 +199,12 @@ public class MatrixIncidenceStructure implements IncidenceStructure {
 				heuristicDistance += Math.abs(rowIntersection[row1][row2] - this.lambda);
 			}
 		}
-		for(int col1 =0; col1 <this.b; col1++) {
-			for (int col2 = 0; col2 < this.b; col2++) {
-				if (col1 == col2) continue;
-				heuristicDistance += Math.abs(colIntersection[col1][col2] - this.lambda);
-			}
-		}
+		//for(int col1 =0; col1 <this.b; col1++) {
+		//	for (int col2 = 0; col2 < this.b; col2++) {
+		//		if (col1 == col2) continue;
+		//		heuristicDistance += Math.abs(colIntersection[col1][col2] - this.lambda);
+		//	}
+		//}
 		this.maxHeuristicDistance=b*(v-k) + (v*v - v)*(r-lambda);
 	}
 

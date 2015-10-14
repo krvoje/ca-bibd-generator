@@ -1,4 +1,5 @@
 package org.krvoje.bibd;
+
 import static java.lang.Math.abs;
 import static java.lang.Math.max;
 
@@ -41,28 +42,18 @@ public class RandomCABIBD {
                 is.setIncidence(row, col, true);
             }
         }
-
-        for(int row=0; row<is.v(); row++)
-            for(int col =0; col <is.b(); col++)
-                changeFactor[row][col] = changeFactor(is,row,col);
     }
 
     private IncidenceStructure getBibd(){
-        int maxChangeFactor = (is.v()-1)*abs(is.r() - is.lambda()) + (is.b() - is.k()) + (is.v() - is.r());
-        int generations = 0;
+        int maxChangeFactor = (is.v() - 1) * abs(is.r() - is.lambda()) + (is.b() - is.k()) + (is.v() - is.r());
+        int generations = 1;
         int iterations = 0;
         int unchanged = 0;
         int maxUnchanged = 0;
 
+        int col = -1;
         while(true)
         {
-            iterations++;
-
-            if(unchanged > 10) {
-                //System.out.println(unchanged + ", " + maxUnchanged);
-                //System.out.println(is);
-            }
-
             if(is.isBIBD()) {
                 System.out.println("Generations: " + generations);
                 System.out.println("Iterations: " + iterations);
@@ -70,7 +61,8 @@ public class RandomCABIBD {
                 return this.is; // Sparta
             }
 
-            int col = rnd.nextInt(is.b());
+            iterations++;
+            col = (++col) % is.b();
             int activeRow = randomActiveInCol(is, col);
             int dormantRow = randomDormantInCol(is, col);
 
@@ -78,7 +70,7 @@ public class RandomCABIBD {
             int cfd = changeFactor(is, dormantRow, col);
 
             int doWeChange = rnd.nextInt(maxChangeFactor);
-            if(doWeChange < cfa && doWeChange < cfd) {
+            if(cfa > doWeChange && cfd > doWeChange) {
                 is.flip(activeRow, col);
                 is.flip(dormantRow, col);
                 maxUnchanged=max(unchanged,maxUnchanged);
@@ -86,7 +78,6 @@ public class RandomCABIBD {
                 generations++;
             }
             else {
-                //System.out.println(doWeChange + ", " + cfa+ ", " + cfd);
                 unchanged ++;
             }
         }
@@ -108,9 +99,9 @@ public class RandomCABIBD {
             }
             if(delta > 0) {
                 if(is.dormant(row, col) && is.active(otherRow, col))
-                    changeFactor+=delta;
+                    changeFactor += delta;
                 else if(is.dormant(row, col) && is.dormant(otherRow, col))
-                    changeFactor-=delta;
+                    changeFactor -= delta;
             }
         }
 
