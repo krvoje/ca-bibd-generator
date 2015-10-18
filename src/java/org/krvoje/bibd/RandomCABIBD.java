@@ -11,6 +11,7 @@ public class RandomCABIBD {
 
     private final int[][] changeFactor;
     private final IncidenceStructure is;
+    private int maxChangeFactor=1;
 
     public static void main(String[] args) throws Exception {
         int vertices, blocksPerVertex,lambda;
@@ -45,7 +46,6 @@ public class RandomCABIBD {
     }
 
     private IncidenceStructure getBibd(){
-        int maxChangeFactor = (is.v() - 1) * abs(is.r() - is.lambda()) + (is.b() - is.k()) + (is.v() - is.r());
         int generations = 1;
         int iterations = 0;
         int unchanged = 0;
@@ -70,10 +70,12 @@ public class RandomCABIBD {
             int cfd = changeFactor(is, dormantRow, col);
 
             int doWeChange = rnd.nextInt(maxChangeFactor);
-            if(cfa > doWeChange && cfd > doWeChange) {
+
+            if(cfa > doWeChange && cfd > doWeChange || unchanged > is.v()*is.b()*3) {
                 is.flip(activeRow, col);
                 is.flip(dormantRow, col);
                 maxUnchanged=max(unchanged,maxUnchanged);
+                //System.out.println(unchanged);
                 unchanged = 0;
                 generations++;
             }
@@ -83,7 +85,7 @@ public class RandomCABIBD {
         }
     }
 
-    private static int changeFactor(IncidenceStructure is, int row, int col) {
+    private int changeFactor(IncidenceStructure is, int row, int col) {
         int changeFactor = 0;
         int delta = 0;
 
@@ -118,6 +120,8 @@ public class RandomCABIBD {
             changeFactor -= delta;
         else if(is.dormant(row,col))
             changeFactor += delta;
+
+        maxChangeFactor = max(changeFactor, maxChangeFactor);
 
         return changeFactor;
     }
