@@ -29,10 +29,11 @@ public class MatrixIncidenceStructure implements IncidenceStructure {
 		{
 			throw new Exception("Invalid BIBD parameters.");
 		}
-		
+
 		this.r = r_.intValue();
 		this.b = b_.intValue();
-		
+
+		System.out.println(String.format("(v=%d, k=%d, λ=%d, b=%d, r=%d)", v, k, lambda, b, r));
 		this.incidences = new int[v][b];
 		this.rowIntersection = new int[v][v];
 		this.colIntersection = new int[b][b];
@@ -48,7 +49,6 @@ public class MatrixIncidenceStructure implements IncidenceStructure {
 		}
 
 		this.updateCache();
-		System.out.println(String.format("(v=%d, k=%d, λ=%d, b=%d, r=%d)", v, k, lambda, b, r));
 	}
 
 	@Override
