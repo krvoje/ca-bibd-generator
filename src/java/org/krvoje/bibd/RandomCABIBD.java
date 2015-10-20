@@ -85,6 +85,7 @@ public class RandomCABIBD {
             if(unchanged > is.v()*is.b()*10) {
                 System.out.println("Stale, randomizing...");
                 this.randomize();
+                unchanged = 0;
                 continue;
             }
             doWeChange = (cfa > randomChangeFactor && cfd > randomChangeFactor)
