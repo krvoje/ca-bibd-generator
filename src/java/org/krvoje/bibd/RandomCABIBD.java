@@ -81,8 +81,8 @@ public class RandomCABIBD {
 
             doWeChange = (rcf < cfa && rcf < cfd)
                 || unchanged > is.v()*is.b()*3 && (rcf < cfa || rcf < cfd)
+                || unchanged > is.v()*is.b()*4 && (cfa < 0 && cfd < 0)
                 || unchanged > is.v()*is.b()*5 && (cfa < 0 || cfd < 0)
-                || unchanged > is.v()*is.b()*6 && (cfa < 0 && cfd < 0)
                 || unchanged > is.v()*is.b()*7
                 ;
 
