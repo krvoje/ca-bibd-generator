@@ -51,32 +51,26 @@ public class MatrixIncidenceStructure implements IncidenceStructure {
 		this.updateCache();
 	}
 
-	@Override
 	public int v() {
 		return this.v;
 	}
 
-	@Override
 	public int r() {
 		return this.r;
 	}
 
-	@Override
 	public int b() {
 		return this.b;
 	}
 
-	@Override
 	public int k() {
 		return this.k;
 	}
 
-	@Override
 	public int lambda() {
 		return this.lambda;
 	}
 
-	@Override
 	public int heuristicDistance() {
 		return this.heuristicDistance;
 	}
@@ -120,33 +114,27 @@ public class MatrixIncidenceStructure implements IncidenceStructure {
 		return this.incidences[row][col] == 0;
 	}
 
-	@Override
 	public int incidences(int row, int col) {
 		return this.incidences[row][col];
 	}
 
-	@Override
 	public void setIncidence(int row, int col, boolean active) {
 		if(!(this.active(row,col) && active))
 			this.flip(row,col);
 	}
 
-	@Override
 	public int rowIntersection(int row, int otherRow) {
 		return this.rowIntersection[row][otherRow];
 	}
 
-	@Override
 	public int colIntersection(int col, int otherCol) {
 		return this.colIntersection[col][otherCol];
 	}
 
-	@Override
 	public int sumInRow(int row) {
 		return this.sumInRow[row];
 	}
 
-	@Override
 	public int sumInCol(int col) {
 		return this.sumInCol[col];
 	}
@@ -253,15 +241,15 @@ public class MatrixIncidenceStructure implements IncidenceStructure {
 			for(int j=0; j <b; j++) {
 				sb.append(incidences[i][j]);
 			}
-			sb.append("-"+sumInRow[i]);
+			/*sb.append("-"+sumInRow[i]);*/
 			sb.append("\n");
 		}
-		for(int j=0; j <b; j++)
+		/*for(int j=0; j <b; j++)
 			sb.append("|");
 		sb.append("\n");
 		for(int j=0; j <b; j++)
 			sb.append(sumInCol[j]);
-		sb.append("\n");
+		sb.append("\n");*/
 		return sb.toString();
 	}
 }
