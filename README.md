@@ -1,18 +1,8 @@
-# Balanced incomplete block design incidence matrix generator
+# Balanced Incomplete Block Design Incidence Matrix Generator
 
-An old university project. 
+An implementation of an [evolutionary algorithm](https://en.wikipedia.org/wiki/Evolutionary_algorithm) that tries to generate a *Balanced Incomplete Block Design* (see [BIBD](http://mathworld.wolfram.com/BlockDesign.html) ) incidence matrix. Currently works nice for small matrices :)
 
-Tries to generate a balanced incomplete block design (http://mathworld.wolfram.com/BlockDesign.html) incidence matrix, using a cellular automaton grid. Works nice for small matrices :)
-
-Java and Fortran.
-
-The Fortran version builds with gfortran 4.7.2., and currently hosts an older version of the algorithm.
-
-Usage:
-
-    ./target/bibd_ca v k lambda
-
-For instance to generate a couple of examples:
+Requires JDK 1.6 to build. To generate a couple of examples:
 
     make    
     java -jar ./target/bibd_ca.jar 7 3 1
@@ -20,3 +10,7 @@ For instance to generate a couple of examples:
     java -jar ./target/bibd_ca.jar 9 3 1
     java -jar ./target/bibd_ca.jar 13 3 1
     java -jar ./target/bibd_ca.jar 15 3 1
+    java -jar ./target/bibd_ca.jar 19 3 1
+    java -jar ./target/bibd_ca.jar 21 3 1
+
+The project also hosts an older version of the algorithm written in Fortran (builds with gfortran 4.7.2.)
