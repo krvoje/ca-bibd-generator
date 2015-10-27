@@ -240,6 +240,7 @@ public class MatrixIncidenceStructure implements IncidenceStructure {
 		for(int i=0; i<v; i++) {
 			for(int j=0; j <b; j++) {
 				sb.append(incidences[i][j]);
+                sb.append(" ");
 			}
 			/*sb.append("-"+sumInRow[i]);*/
 			sb.append("\n");

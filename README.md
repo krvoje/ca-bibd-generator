@@ -39,10 +39,10 @@ A *Balanced Incomplete Block Design* is a particular type of incidence structure
 
 Incidence structures lend themselves well to matrix representation. If we use a (*v* x *b*) matrix where *rows* are *vertices*, and *cols* are *blocks*, we codify incidences (or their absence) using zeros and ones.
 
-                                                    0101001
-                                                    0011100
-                                                    1001010
-                                                    0000111
-                                                    1010001
-                                                    0110010
-                                                    1100100
+                                                    0 1 0 1 0 0 1
+                                                    0 0 1 1 1 0 0
+                                                    1 0 0 1 0 1 0
+                                                    0 0 0 0 1 1 1
+                                                    1 0 1 0 0 0 1
+                                                    0 1 1 0 0 1 0
+                                                    1 1 0 0 1 0 0
