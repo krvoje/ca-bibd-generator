@@ -58,7 +58,7 @@ public class RandomCABIBD {
 
         int col, activeRow, dormantRow;
         int cfa, cfd, rcf;
-        boolean doWeChange, stale, mouldy, spoiled;
+        boolean doWeChange, stale;
 
         col = -1;
         while(true)
@@ -79,11 +79,11 @@ public class RandomCABIBD {
             cfd = changeFactor[dormantRow][col];
             rcf = rnd.nextInt(max(1,maxChangeFactor));
 
+            stale = unchanged > is.v()*is.b()*10;
+
             doWeChange = (rcf < cfa && rcf < cfd)
-                || unchanged > is.v()*is.b()*3 && (rcf < cfa || rcf < cfd)
-                || unchanged > is.v()*is.b()*4 && (cfa < 0 && cfd < 0)
-                || unchanged > is.v()*is.b()*5 && (cfa < 0 || cfd < 0)
-                || unchanged > is.v()*is.b()*7
+                || stale
+                || maxChangeFactor <= 0
                 ;
 
             if (doWeChange) {
