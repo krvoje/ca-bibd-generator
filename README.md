@@ -33,7 +33,21 @@ They are a [metaheuristic](https://en.wikipedia.org/wiki/Metaheuristic) (i.e. *g
 
 ## BIBD (Balanced Incomplete Block Design)
 
-A *Balanced Incomplete Block Design* is a particular type of incidence structure (e.g. graph) that satisfies specific conditions.
+A *Balanced Incomplete Block Design* is a particular type of [*incidence structure*](https://en.wikipedia.org/wiki/Incidence_structure) (e.g. graph) that satisfies specific conditions. 
+
+An *incidence structure* consists of *vertices* and *blocks* (e.g. points and lines). *Blocks* contain *vertices*. Two *vertices* are said to be *incident* if a *block* contains them.
+
+In addition, *BIBD* satisfies the properties:
+- each *block* contains *k* *vertices*
+- each *vertex* is contained in *r* blocks
+- each 2 *vertices* are contained together exactly in *lambda* points
+
+The parameters satisfy the equations:
+    
+    v r = b k
+    lambda (v - 1) = r (k - 1)
+
+(*v* is for *vertices*, *b* is for *blocks)
 
 ## The actual algorithm
 
@@ -46,3 +60,5 @@ Incidence structures lend themselves well to matrix representation. If we use a 
                                                     1 0 1 0 0 0 1
                                                     0 1 1 0 0 1 0
                                                     1 1 0 0 1 0 0
+
+The idea of the algorithm is to use a kind of a [cellular automaton](https://en.wikipedia.org/wiki/Cellular_automaton) grid, where the cells are the fields of the incidence matrix.
