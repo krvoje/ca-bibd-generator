@@ -62,3 +62,11 @@ Incidence structures lend themselves well to matrix representation. If we use a 
                                                     1 1 0 0 1 0 0
 
 The idea of the algorithm is to use a kind of a [cellular automaton](https://en.wikipedia.org/wiki/Cellular_automaton) grid, where the cells are the fields of the incidence matrix.
+
+The algorithm does the following basic steps:
+    
+    generate a random incidence matrix
+    while not BIBD:
+        pick two cells in a row
+        compute fitness
+        if the cells are eligible for change swap them
