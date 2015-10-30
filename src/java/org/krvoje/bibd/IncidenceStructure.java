@@ -23,4 +23,5 @@ public interface IncidenceStructure {
 
     public int sumInRow(int row);
     public int sumInCol(int col);
+
 }

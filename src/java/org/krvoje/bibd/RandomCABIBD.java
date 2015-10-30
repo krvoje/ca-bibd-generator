@@ -13,20 +13,34 @@ public class RandomCABIBD {
     private final IncidenceStructure is;
     private int maxChangeFactor =0;
     private int minChangeFactor =0;
+    private int generations = 0;
+    private int iterations = 0;
+    private static boolean animate = false;
+
+    private static final String CLEAR_SCREEN = "\u001B[2J";
 
     public static void main(String[] args) throws Exception {
         int vertices, blocksPerVertex,lambda;
-        if(args.length != 3) {
+        if(args.length != 3 && args.length != 4) {
             System.out.println("Usage: ");
-            System.out.println("java -jar ca-bibd.jar v k lambda");
+            System.out.println("java -jar ca-bibd.jar v k lambda [animate]");
         }
         else {
             vertices = Integer.parseInt(args[0]);
             blocksPerVertex = Integer.parseInt(args[1]);
             lambda = Integer.parseInt(args[2]);
+            if(args.length == 4) {
+                if(args[3].equals("animate")) {
+                    animate = true;
+                }
+            }
 
-            IncidenceStructure is = new RandomCABIBD(vertices, blocksPerVertex, lambda).getBibd();
+            RandomCABIBD algorithm = new RandomCABIBD(vertices, blocksPerVertex, lambda);
+            IncidenceStructure is = algorithm.getBibd();
 
+            System.out.print(CLEAR_SCREEN);
+            System.out.println("Generations: " + algorithm.generations);
+            System.out.println("Iterations: " + algorithm.iterations);
             System.out.println("An incidence matrix for the given parameters found!");
             System.out.print(is);
         }
@@ -52,8 +66,6 @@ public class RandomCABIBD {
     }
 
     private IncidenceStructure getBibd(){
-        int generations = 1;
-        int iterations = 0;
         int unchanged = 0;
 
         int col, activeRow, dormantRow;
@@ -68,8 +80,6 @@ public class RandomCABIBD {
             dormantRow = randomDormantInCol(is, col);
 
             if(is.isBIBD()) {
-                System.out.println("Generations: " + generations);
-                System.out.println("Iterations: " + iterations);
                 return this.is; // Sparta
             }
 
@@ -93,6 +103,11 @@ public class RandomCABIBD {
                 //System.out.println("Unchanged: " + unchanged + ", maxChangeFactor: " + maxChangeFactor);
                 unchanged = 0;
                 generations++;
+                if(animate) {
+                    sleep(50);
+                    System.out.print(CLEAR_SCREEN);
+                    System.out.println(is);
+                }
             }
             else {
                 unchanged ++;
@@ -162,5 +177,13 @@ public class RandomCABIBD {
         while(!is.dormant(row, col))
             row = rnd.nextInt(is.v());
         return row;
+    }
+
+    private static void sleep(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e){
+
+        }
     }
 }

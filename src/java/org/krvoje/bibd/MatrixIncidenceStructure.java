@@ -14,6 +14,9 @@ public class MatrixIncidenceStructure implements IncidenceStructure {
 	
 	private int heuristicDistance;
 	private int maxHeuristicDistance;
+
+	private int generations = 0;
+	private int iterations = 0;
 	
 	public MatrixIncidenceStructure(int v, int k, int lambda) throws Exception
 	{
@@ -239,6 +242,7 @@ public class MatrixIncidenceStructure implements IncidenceStructure {
 		StringBuilder sb = new StringBuilder();
 		for(int i=0; i<v; i++) {
 			for(int j=0; j <b; j++) {
+				//sb.append(incidences[i][j] > 0 ? "1" : "  ");
 				sb.append(incidences[i][j]);
                 sb.append(" ");
 			}
