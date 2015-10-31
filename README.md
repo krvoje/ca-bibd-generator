@@ -11,6 +11,7 @@ Or:
     mvn install
 
 To se a couple of examples on generation:
+
     java -jar ./target/bibd_ca.jar 7 3 1
     java -jar ./target/bibd_ca.jar 7 4 2
     java -jar ./target/bibd_ca.jar 9 3 1
@@ -59,13 +60,20 @@ The parameters satisfy the equations:
 
 Incidence structures lend themselves well to matrix representation. If we use a (*v* x *b*) matrix where *rows* are *vertices*, and *cols* are *blocks*, we codify incidences (or their absence) using zeros and ones.
 
-                                                    0 1 0 1 0 0 1
-                                                    0 0 1 1 1 0 0
-                                                    1 0 0 1 0 1 0
-                                                    0 0 0 0 1 1 1
-                                                    1 0 1 0 0 0 1
-                                                    0 1 1 0 0 1 0
-                                                    1 1 0 0 1 0 0
+
+                                               b
+                                               l
+                                               o
+                                               c
+                                               k
+                                               |
+                                          0 1 |0| 1 0 0 1
+                                          0 0 |1| 1 1 0 0
+                                          1 0 |0| 1 0 1 0
+                                          0 0 |0| 0 1 1 1
+                               vertex ->  1 0 |1| 0 0 0 1
+                                          0 1 |1| 0 0 1 0
+                                          1 1 |0| 0 1 0 0
 
 The idea of the algorithm is to use a kind of a [cellular automaton](https://en.wikipedia.org/wiki/Cellular_automaton) grid, where the cells are the fields of the incidence matrix.
 
