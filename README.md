@@ -2,9 +2,15 @@
 
 An implementation of an [evolutionary algorithm](https://en.wikipedia.org/wiki/Evolutionary_algorithm) that tries to generate a [Balanced Incomplete Block Design](http://mathworld.wolfram.com/BlockDesign.html) [incidence matrix](https://en.wikipedia.org/wiki/Incidence_matrix). Currently works nice for small matrices :)
 
-Requires JDK 1.6 to build. To generate a couple of examples:
+Requires JDK 1.6 to build. To build do:
 
-    make    
+    make 
+
+Or:
+   
+    mvn install
+
+To se a couple of examples on generation:
     java -jar ./target/bibd_ca.jar 7 3 1
     java -jar ./target/bibd_ca.jar 7 4 2
     java -jar ./target/bibd_ca.jar 9 3 1

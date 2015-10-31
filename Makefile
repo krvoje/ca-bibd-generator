@@ -3,8 +3,8 @@ TARGET_JAVA=target/java
 BIN=$(TARGET)
 OBJ=$(TARGET)/obj
 MOD=$(TARGET)/mod
-SRC_FORTRAN=src/fortran
-SRC_JAVA=src/java
+SRC_FORTRAN=src/main/fortran
+SRC_JAVA=src/main/java
 SWITCHES=-O3
 all: java
 fortran: modules main
