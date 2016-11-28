@@ -92,7 +92,7 @@ class MatrixIncidenceStructure(val v: Int, val k: Int, val lambda: Int) extends 
     val bDouble = rDouble * v / k
 
     if(!rDouble.isValidInt || !bDouble.isValidInt)
-      throw new RuntimeException("Invalid BIBD parameters.")
+      throw new RuntimeException(s"Invalid BIBD parameters. ($v, $k, $lambda)")
 
     (rDouble.toInt, bDouble.toInt)
   }

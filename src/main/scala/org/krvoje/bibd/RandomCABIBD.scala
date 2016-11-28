@@ -34,10 +34,10 @@ object RandomCABIBD extends App {
   randomize(is)
   getBibd // If this never halts, the program does not halt
 
-  System.out.print(CLEAR_SCREEN)
+  //System.out.print(CLEAR_SCREEN)
   System.out.println("Generations: " + generations)
   System.out.println("Iterations: " + iterations)
-  System.out.println("An incidence matrix for the given parameters found!")
+  System.out.println(s"An incidence matrix for (${is.v}, ${is.k}, ${is.lambda}) found!")
   System.out.print(is)
 
   def randomize(is: IncidenceStructure) {
@@ -54,6 +54,7 @@ object RandomCABIBD extends App {
 
   def getBibd: IncidenceStructure = {
     var unchanged = 0
+    var lastChange = System.currentTimeMillis()
 
     var activeRow = 0
     var dormantRow = 0
@@ -81,7 +82,7 @@ object RandomCABIBD extends App {
       cfd = changeFactor(dormantRow)(col)
       rcf = rnd.nextInt(math max(1,maxChangeFactor))
 
-      stale = unchanged > is.v*is.b*10
+      stale = unchanged > is.v * is.b * is.r * is.k
 
       doWeChange = (rcf < cfa && rcf < cfd) ||
         stale ||
@@ -93,6 +94,7 @@ object RandomCABIBD extends App {
         calculateChangeFactors
         //System.out.println("Unchanged: " + unchanged + ", maxChangeFactor: " + maxChangeFactor)
         unchanged = 0
+        lastChange = System.currentTimeMillis()
         generations += 1
         if(animate) {
           sleep(50)
