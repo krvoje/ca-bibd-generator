@@ -41,8 +41,8 @@ object RandomCABIBD extends App {
   System.out.print(is)
 
   def randomize(is: IncidenceStructure) {
-    forIndex(0, is.k) { i: Int =>
-      forIndex(0, is.b) { col:Int =>
+    forIndex(0, is.k) { i =>
+      forIndex(0, is.b) { col =>
         var row = rnd.nextInt(is.v)
         while(is.active(row, col))
           row = rnd.nextInt(is.v)
@@ -87,7 +87,6 @@ object RandomCABIBD extends App {
         stale ||
         maxChangeFactor <= 0
 
-
       if (doWeChange) {
         is.flip(activeRow, col)
         is.flip(dormantRow, col)
@@ -114,7 +113,7 @@ object RandomCABIBD extends App {
       forIndex(0, is.b) { col =>
         changeFactor(row)(col) = calculateChangeFactor(row, col)
         maxChangeFactor = math.max(changeFactor(row)(col), maxChangeFactor)
-        minChangeFactor = math.max(changeFactor(row)(col), minChangeFactor)
+        minChangeFactor = math.min(changeFactor(row)(col), minChangeFactor)
       }
     }
   }

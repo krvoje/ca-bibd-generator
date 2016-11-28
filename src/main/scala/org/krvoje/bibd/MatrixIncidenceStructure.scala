@@ -6,8 +6,8 @@ class MatrixIncidenceStructure(val v: Int, val k: Int, val lambda: Int) extends 
   println(s"(v=$v, k=$k, λ=$lambda, b=$b, r=$r)")
 
   private val _incidences = Array.ofDim[Int](v, b)
-  private val _rowIntersection = Array.ofDim[Int](v, b)
-  private val _colIntersection = Array.ofDim[Int](v, b)
+  private val _rowIntersection = Array.ofDim[Int](v, v)
+  private val _colIntersection = Array.ofDim[Int](b, b)
   private val _sumInRow = Array.ofDim[Int](v)
   private val _sumInCol = Array.ofDim[Int](b)
   private var _sumTotal = 0
@@ -17,9 +17,9 @@ class MatrixIncidenceStructure(val v: Int, val k: Int, val lambda: Int) extends 
 
   updateCache()
 
-  override def rowIntersection(row: Int, col: Int): Int = _rowIntersection(row)(col)
+  override def rowIntersection(row1: Int, row2: Int): Int = _rowIntersection(row1)(row2)
 
-  override def colIntersection(row: Int, col: Int): Int = _colIntersection(row)(col)
+  override def colIntersection(col1: Int, col2: Int): Int = _colIntersection(col1)(col2)
 
   override def sumInRow(row: Int): Int = _sumInRow(row)
 
@@ -29,7 +29,9 @@ class MatrixIncidenceStructure(val v: Int, val k: Int, val lambda: Int) extends 
 
   override def active(row: Int, col: Int): Boolean = incidences(row, col) != 0
 
-  override def setIncidence(row: Int, col: Int, active: Boolean): Unit = _incidences(row)(col) = if(active) 1 else 0
+  override def setIncidence(row: Int, col: Int, alive: Boolean): Unit = {
+    if(!(alive && active(row, col))) flip(row, col)
+  }
 
   override def incidences(row: Int, col: Int): Int = _incidences(row)(col)
 
@@ -46,7 +48,7 @@ class MatrixIncidenceStructure(val v: Int, val k: Int, val lambda: Int) extends 
       if(sumInCol(col) != k) return false
     }
 
-    forIndex(0, v) { row =>
+    forIndex(0, v - 1) { row =>
       forIndex(row + 1, v) { otherRow =>
         if(_rowIntersection(row)(otherRow) != lambda) return false
       }
@@ -56,9 +58,9 @@ class MatrixIncidenceStructure(val v: Int, val k: Int, val lambda: Int) extends 
   }
 
   override def flip(row: Int, col: Int): Unit = {
-    val newVal: Int = math.abs(_incidences(row)(col) - 1)
+    val newVal = if(active(row, col)) 0 else 1
     _incidences(row)(col) = newVal
-    val increment: Int = math.pow(-1, newVal.toDouble + 1).intValue
+    val increment = if(newVal == 0) -1 else 1
 
     _sumTotal += increment
     _sumInRow(row) += increment
@@ -98,15 +100,19 @@ class MatrixIncidenceStructure(val v: Int, val k: Int, val lambda: Int) extends 
   private def updateCache(): Unit = {
     _sumTotal = 0
 
-    // Row sum
     forIndex(0, v) { row =>
       _sumInRow(row) = 0
-      _sumInCol(row) = 0
       forIndex(0, b) { col =>
         _sumInRow(row) += _incidences(row)(col)
+      }
+      _sumTotal += _sumInRow(row)
+    }
+
+    forIndex(0, b) { col =>
+      _sumInCol(col) = 0
+      forIndex(0, v) { row =>
         _sumInCol(col) += _incidences(row)(col)
       }
-      _sumTotal += sumInRow(row)
     }
 
     forIndex(0, v) { row1 =>
@@ -132,7 +138,7 @@ class MatrixIncidenceStructure(val v: Int, val k: Int, val lambda: Int) extends 
     forIndex(0, v) { row1 =>
       forIndex(0, v) { row2 =>
         if(row1 != row2) {
-          _heuristicDistance += _rowIntersection(row1)(row2) - lambda
+          _heuristicDistance += math.abs(_rowIntersection(row1)(row2) - lambda)
         }
       }
     }
@@ -147,6 +153,7 @@ class MatrixIncidenceStructure(val v: Int, val k: Int, val lambda: Int) extends 
           col => sb.append(_incidences(row)(col))
         }
     }
+    sb.append("\n")
     sb.toString()
   }
 }
