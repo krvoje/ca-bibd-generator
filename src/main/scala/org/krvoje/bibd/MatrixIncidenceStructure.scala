@@ -2,7 +2,7 @@ package org.krvoje.bibd
 
 class MatrixIncidenceStructure(val v: Int, val k: Int, val lambda: Int) extends IncidenceStructure{
 
-  val (r, b) = computeParams(v, k, lambda)
+  val (r: Int, b: Int) = computeParams(v, k, lambda)
   println(s"(v=$v, k=$k, λ=$lambda, b=$b, r=$r)")
 
   private val _incidences = Array.ofDim[Int](v, b)

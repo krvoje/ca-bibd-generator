@@ -3,7 +3,7 @@ package org.krvoje.bibd
 import org.specs2.mutable.Specification
 
 class BIBDTestSpec extends Specification {
-
+  //args(skipAll = true)
   "Steiner Triplets" >> {
     "They should halt" >> {
       RandomCABIBD.main(Array("7", "3", "1"))

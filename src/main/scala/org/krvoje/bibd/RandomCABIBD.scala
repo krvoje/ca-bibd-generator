@@ -6,10 +6,11 @@ object RandomCABIBD extends App {
 
   val rnd = Random
 
-  var maxChangeFactor =0
-  var minChangeFactor =0
-  var generations = 0
-  var iterations = 0
+  var lastChange = System.currentTimeMillis()
+  var maxChangeFactor: BigInt = 0
+  var minChangeFactor: BigInt = 0
+  var generations: BigInt = 0
+  var iterations: BigInt = 0
   var animate = false
 
   val CLEAR_SCREEN = "\u001B[2J"
@@ -23,14 +24,16 @@ object RandomCABIBD extends App {
   val vertices = Integer.parseInt(args(0))
   val blocksPerVertex = Integer.parseInt(args(1))
   val lambda = Integer.parseInt(args(2))
-  if(args.length == 4) {
-    if(args(3) == "animate") {
-      animate = true
-    }
-  }
 
   val is = new MatrixIncidenceStructure(vertices, blocksPerVertex, lambda)
   val changeFactor = Array.ofDim[Int](is.v, is.b)
+
+  val maxUnchangedFactor = is.v * is.b * is.r * is.k * is.lambda
+  val minUnchangedFactor = is.v
+  var unchangedFactor = if(args.length == 4) {
+    Integer.parseInt(args(3))
+  } else maxUnchangedFactor
+
   randomize(is)
   getBibd // If this never halts, the program does not halt
 
@@ -54,7 +57,6 @@ object RandomCABIBD extends App {
 
   def getBibd: IncidenceStructure = {
     var unchanged = 0
-    var lastChange = System.currentTimeMillis()
 
     var activeRow = 0
     var dormantRow = 0
@@ -80,9 +82,9 @@ object RandomCABIBD extends App {
 
       cfa = changeFactor(activeRow)(col)
       cfd = changeFactor(dormantRow)(col)
-      rcf = rnd.nextInt(math max(1,maxChangeFactor))
+      rcf = rnd.nextInt(math.max(1,maxChangeFactor.intValue()))
 
-      stale = unchanged > is.v * is.b * is.r * is.k
+      stale = unchanged > currentUnchangedFactor()
 
       doWeChange = (rcf < cfa && rcf < cfd) ||
         stale ||
@@ -114,8 +116,8 @@ object RandomCABIBD extends App {
     forIndex(0, is.v) { row =>
       forIndex(0, is.b) { col =>
         changeFactor(row)(col) = calculateChangeFactor(row, col)
-        maxChangeFactor = math.max(changeFactor(row)(col), maxChangeFactor)
-        minChangeFactor = math.min(changeFactor(row)(col), minChangeFactor)
+        maxChangeFactor = math.max(changeFactor(row)(col), maxChangeFactor.intValue())
+        minChangeFactor = math.min(changeFactor(row)(col), minChangeFactor.intValue())
       }
     }
   }
@@ -172,6 +174,16 @@ object RandomCABIBD extends App {
     while(!is.dormant(row, col))
       row = rnd.nextInt(is.v)
     return row
+  }
+
+  def currentUnchangedFactor() = {
+    if (System.currentTimeMillis() - lastChange > 10000) {
+      if (unchangedFactor <= minUnchangedFactor) unchangedFactor += 1
+      else if (unchangedFactor >= maxUnchangedFactor) unchangedFactor -= 1
+    }
+
+    //println(unchangedFactor)
+    unchangedFactor
   }
 
   def sleep(millis: Long): Unit = {
