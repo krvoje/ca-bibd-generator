@@ -28,8 +28,9 @@ object RandomCABIBD extends App {
   val is = new MatrixIncidenceStructure(vertices, blocksPerVertex, lambda)
   val changeFactor = Array.ofDim[Int](is.v, is.b)
 
-  val maxUnchangedFactor = is.v * is.b * is.r * is.k * is.lambda
-  val minUnchangedFactor = is.v
+  val maxUnchangedFactor = is.v * is.b * 10
+  val minUnchangedFactor = is.v * is.b
+  var unchangedFactorIncrement = -1
   var unchangedFactor = if(args.length == 4) {
     Integer.parseInt(args(3))
   } else maxUnchangedFactor
@@ -177,12 +178,15 @@ object RandomCABIBD extends App {
   }
 
   def currentUnchangedFactor() = {
-    if (System.currentTimeMillis() - lastChange > 10000) {
-      if (unchangedFactor <= minUnchangedFactor) unchangedFactor += 1
-      else if (unchangedFactor >= maxUnchangedFactor) unchangedFactor -= 1
+    if (System.currentTimeMillis() - lastChange > unchangedFactor * 10) {
+      if (unchangedFactor <= minUnchangedFactor)
+        unchangedFactorIncrement = 1
+      else if (unchangedFactor >= maxUnchangedFactor)
+        unchangedFactorIncrement = -1
+      unchangedFactor += unchangedFactorIncrement
+      //print(unchangedFactor + ", ")
     }
 
-    //println(unchangedFactor)
     unchangedFactor
   }
 
