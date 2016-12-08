@@ -9,8 +9,10 @@ object RandomCABIBD extends App {
   var lastChange = System.currentTimeMillis()
   var maxChangeFactor: BigInt = 0
   var minChangeFactor: BigInt = 0
+  var staleCellsCount: BigInt = 0
   var generations: BigInt = 0
   var iterations: BigInt = 0
+  var unchanged: BigInt = 0
   var animate = false
 
   val CLEAR_SCREEN = "\u001B[2J"
@@ -28,12 +30,19 @@ object RandomCABIBD extends App {
   val is = new MatrixIncidenceStructure(vertices, blocksPerVertex, lambda)
   val changeFactor = Array.ofDim[Int](is.v, is.b)
 
-  val maxUnchangedFactor = is.v * is.b * 10
-  val minUnchangedFactor = is.v * is.b
-  var unchangedFactorIncrement = -1
-  var unchangedFactor = if(args.length == 4) {
-    Integer.parseInt(args(3))
-  } else maxUnchangedFactor
+  val maxUnchangedFactor: BigInt = is.v * is.b * is.r * is.k * is.lambda
+  val minUnchangedFactor: BigInt = is.v * is.b
+  val unchangedFactorIncrement = 1
+  var unchangedFactorUp: Boolean = true
+  var unchangedFactor: BigInt = minUnchangedFactor + (maxUnchangedFactor - minUnchangedFactor) / 2
+
+  val maxGranularity: Long = 5000
+  val minGranularity: Long = 100
+  val granularityIncrement: Long = 1
+  var granularity: Long = minGranularity
+  var granularityUp: Boolean = true
+  val granularityIntervalChange = 10
+  var lastGranularityChange: Long = System.currentTimeMillis()
 
   randomize(is)
   getBibd // If this never halts, the program does not halt
@@ -57,8 +66,6 @@ object RandomCABIBD extends App {
   }
 
   def getBibd: IncidenceStructure = {
-    var unchanged = 0
-
     var activeRow = 0
     var dormantRow = 0
     var cfa = 0
@@ -85,11 +92,11 @@ object RandomCABIBD extends App {
       cfd = changeFactor(dormantRow)(col)
       rcf = rnd.nextInt(math.max(1,maxChangeFactor.intValue()))
 
-      stale = unchanged > currentUnchangedFactor()
+      stale = unchanged > currentUnchangedFactor || maxUnchangedFactor <= 0
+      stale = unchanged > currentUnchangedFactor &&
+        ((cfa <= 0 && cfd <= 0) && randomStalenessFactor)
 
-      doWeChange = (rcf < cfa && rcf < cfd) ||
-        stale ||
-        maxChangeFactor <= 0
+      doWeChange = (rcf < cfa && rcf < cfd) || stale
 
       if (doWeChange) {
         is.flip(activeRow, col)
@@ -114,11 +121,13 @@ object RandomCABIBD extends App {
 
   def calculateChangeFactors: Unit = {
     maxChangeFactor = 0
+    staleCellsCount = 0
     forIndex(0, is.v) { row =>
       forIndex(0, is.b) { col =>
         changeFactor(row)(col) = calculateChangeFactor(row, col)
         maxChangeFactor = math.max(changeFactor(row)(col), maxChangeFactor.intValue())
         minChangeFactor = math.min(changeFactor(row)(col), minChangeFactor.intValue())
+        if(changeFactor(row)(col) <= 0) staleCellsCount += 1
       }
     }
   }
@@ -177,20 +186,33 @@ object RandomCABIBD extends App {
     return row
   }
 
-  def currentUnchangedFactor() = {
-    if (System.currentTimeMillis() - lastChange > unchangedFactor * 10) {
-      if (unchangedFactor <= minUnchangedFactor)
-        unchangedFactorIncrement = 1
-      else if (unchangedFactor >= maxUnchangedFactor)
-        unchangedFactorIncrement = -1
-      unchangedFactor += unchangedFactorIncrement
+  def currentUnchangedFactor = {
+    if(System.currentTimeMillis() - lastGranularityChange > granularityIntervalChange) {
+      if(granularity < minGranularity) granularityUp = true
+      if(granularity > maxGranularity) granularityUp = false
+      if(granularityUp) granularity -= granularityIncrement
+      else granularity += granularityIncrement
+    }
+
+    if (System.currentTimeMillis() - lastChange > granularity) {
+      if (unchangedFactor < minUnchangedFactor)
+        unchangedFactorUp = true
+      else if (unchangedFactor > maxUnchangedFactor)
+        unchangedFactorUp = false
+
+      if(unchangedFactorUp) unchangedFactor += unchangedFactorIncrement
+      else unchangedFactor -= unchangedFactorIncrement
       //print(unchangedFactor + ", ")
     }
 
     unchangedFactor
   }
 
-  def sleep(millis: Long): Unit = {
+  private def sleep(millis: Long): Unit = {
     Thread.sleep(millis)
+  }
+
+  private def randomStalenessFactor: Boolean = {
+    rnd.nextInt(is.v * is.b) < staleCellsCount
   }
 }
