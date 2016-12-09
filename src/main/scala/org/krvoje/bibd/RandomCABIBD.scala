@@ -32,17 +32,9 @@ object RandomCABIBD extends App {
 
   val maxUnchangedFactor: BigInt = is.v * is.b * is.r * is.k * is.lambda
   val minUnchangedFactor: BigInt = is.v * is.b
-  val unchangedFactorIncrement = 1
+  def unchangedFactorIncrement = 1
   var unchangedFactorUp: Boolean = true
-  var unchangedFactor: BigInt = minUnchangedFactor + (maxUnchangedFactor - minUnchangedFactor) / 2
-
-  val maxGranularity: Long = 5000
-  val minGranularity: Long = 100
-  val granularityIncrement: Long = 1
-  var granularity: Long = minGranularity
-  var granularityUp: Boolean = true
-  val granularityIntervalChange = 10
-  var lastGranularityChange: Long = System.currentTimeMillis()
+  var unchangedFactor: BigInt = minUnchangedFactor
 
   randomize(is)
   getBibd // If this never halts, the program does not halt
@@ -51,6 +43,7 @@ object RandomCABIBD extends App {
   System.out.println("Generations: " + generations)
   System.out.println("Iterations: " + iterations)
   System.out.println(s"An incidence matrix for (${is.v}, ${is.k}, ${is.lambda}) found!")
+  println(s"Unchanged factor: $unchangedFactor")
   System.out.print(is)
 
   def randomize(is: IncidenceStructure) {
@@ -92,9 +85,7 @@ object RandomCABIBD extends App {
       cfd = changeFactor(dormantRow)(col)
       rcf = rnd.nextInt(math.max(1,maxChangeFactor.intValue()))
 
-      stale = unchanged > currentUnchangedFactor || maxUnchangedFactor <= 0
-      stale = unchanged > currentUnchangedFactor &&
-        ((cfa <= 0 && cfd <= 0) && randomStalenessFactor)
+      stale = unchanged > currentUnchangedFactor && randomStalenessFactor || maxUnchangedFactor <= 0
 
       doWeChange = (rcf < cfa && rcf < cfd) || stale
 
@@ -187,14 +178,8 @@ object RandomCABIBD extends App {
   }
 
   def currentUnchangedFactor = {
-    if(System.currentTimeMillis() - lastGranularityChange > granularityIntervalChange) {
-      if(granularity < minGranularity) granularityUp = true
-      if(granularity > maxGranularity) granularityUp = false
-      if(granularityUp) granularity -= granularityIncrement
-      else granularity += granularityIncrement
-    }
 
-    if (System.currentTimeMillis() - lastChange > granularity) {
+    if (unchanged > is.b) {
       if (unchangedFactor < minUnchangedFactor)
         unchangedFactorUp = true
       else if (unchangedFactor > maxUnchangedFactor)
@@ -215,4 +200,5 @@ object RandomCABIBD extends App {
   private def randomStalenessFactor: Boolean = {
     rnd.nextInt(is.v * is.b) < staleCellsCount
   }
+
 }
