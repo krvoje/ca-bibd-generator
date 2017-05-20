@@ -24,4 +24,6 @@ trait IncidenceStructure {
 
   def sumInRow(row: Int): Int
   def sumInCol(col: Int): Int
+
+  def randomize
 }

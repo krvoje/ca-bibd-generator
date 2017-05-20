@@ -1,9 +1,13 @@
 name := "Cellular Automaton BIBD generator"
 version := "1.0"
-scalaVersion := "2.11.8"
+
+libraryDependencies += "org.scalactic" %% "scalactic" % "3.0.1"
+libraryDependencies +="com.lihaoyi" %% "utest" % "0.4.5" % "test"
+testFrameworks += new TestFramework("utest.runner.Framework")
 
 mainClass in assembly := Some("org.krvoje.bibd.RandomCABIBD")
 
-libraryDependencies ++= Seq("org.specs2" %% "specs2-core" % "3.8.5" % "test")
-
-scalacOptions in Test ++= Seq("-Yrangepos")
+assemblyMergeStrategy in assembly := {
+  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+  case _ => MergeStrategy.first
+}

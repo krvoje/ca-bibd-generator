@@ -1,10 +1,10 @@
 package org.krvoje.bibd
 
-class MatrixIncidenceStructure(val v: Int, val k: Int, val lambda: Int) extends IncidenceStructure{
+import scala.util.Random
+
+case class MatrixIncidenceStructure(val v: Int, val k: Int, val lambda: Int, val randomizeMe: Boolean = true) extends IncidenceStructure{
 
   val (r: Int, b: Int) = computeParams(v, k, lambda)
-  println()
-  println(s"(v=$v, k=$k, λ=$lambda, b=$b, r=$r)")
 
   private val _incidences = Array.ofDim[Int](v, b)
   private val _rowIntersection = Array.ofDim[Int](v, v)
@@ -14,9 +14,10 @@ class MatrixIncidenceStructure(val v: Int, val k: Int, val lambda: Int) extends 
   private var _sumTotal = 0
   private val _sumIdeal = v*r
   private var _heuristicDistance = 0
-  private var _maxHeuristicDistance = 0
+  val maxHeuristicDistance = b * (v - k) + (v * v - v) * (r - lambda)
 
   updateCache()
+  if(randomizeMe) randomize
 
   override def rowIntersection(row1: Int, row2: Int): Int = _rowIntersection(row1)(row2)
 
@@ -143,7 +144,17 @@ class MatrixIncidenceStructure(val v: Int, val k: Int, val lambda: Int) extends 
         }
       }
     }
-    _maxHeuristicDistance = b * (v - k) + (v * v - v) * (r - lambda)
+  }
+
+  def randomize = {
+    forIndex(0, k) { i =>
+      forIndex(0, b) { col =>
+        var row = Random.nextInt(v)
+        while(active(row, col))
+          row = Random.nextInt(v)
+        setIncidence(row, col, true)
+      }
+    }
   }
 
   override def toString: String = {
