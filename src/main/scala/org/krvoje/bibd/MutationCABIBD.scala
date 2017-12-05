@@ -2,7 +2,7 @@ package org.krvoje.bibd
 
 import scala.util.Random
 
-case class MutationCABIBD(vertices: Integer, blocksPerVertex: Integer, lambda: Integer) {
+case class MutationCABIBD(vertices: Integer, blocksPerVertex: Integer, lambda: Integer, logMe: Boolean = true)(implicit val lastChange: LastChange) {
 
   val rnd = Random
 
@@ -12,72 +12,72 @@ case class MutationCABIBD(vertices: Integer, blocksPerVertex: Integer, lambda: I
   var generations: BigInt = 0
   var iterations: BigInt = 0
   var unchanged: BigInt = 0
-  implicit val lastNonStaleChange = Moment(System.currentTimeMillis())
-  var lastChange = System.currentTimeMillis()
 
   val is = MatrixIncidenceStructure(vertices, blocksPerVertex, lambda)
   val changeFactor = Array.ofDim[Int](is.v, is.b)
 
-  println()
-  println(s"(v=${is.v}, k=${is.k}, λ=$lambda, b=${is.b}, r=${is.r})")
+  log("")
+  log(s"(v=${is.v}, k=${is.k}, λ=$lambda, b=${is.b}, r=${is.r})")
 
-  val unchangedTreshold = Stochasticity(min = 1, max = is.v * is.b * is.r * is.k * is.lambda, increment = 1)
-  val stalenessTreshold = Stochasticity(min = 1, max = is.v * is.b, increment = 1)
 
-  calculateChangeFactors
+  val inc = Stochasticity(1, 500)
+  val blocksInc = Stochasticity(1, is.b, 1)
+  val blocksSto = Stochasticity(1, is.v * is.b, increment = blocksInc.copy().value)
+  val unchangedTreshold = Stochasticity(1, is.v * is.b * is.r * is.k * is.lambda, increment = blocksInc.copy().value, stochasticity = blocksSto.copy())
+  val stalenessTreshold = Stochasticity(1, is.v * is.b, increment = blocksInc.copy().value, stochasticity = inc.copy())
 
   // If this never halts, the program does not halt
   def findBIBD: IncidenceStructure = {
-    var activeRow = 0
-    var dormantRow = 0
-    var cfa = 0
-    var cfd = 0
-    var rcf = 0
-    var doWeChange = false
+    calculateChangeFactors
 
     var col = -1
     while(true)
     {
-      col = (col + 1) % is.b
-      //col = rnd.nextInt(is.b)
-
-      activeRow = randomActiveInCol(is, col)
-      dormantRow = randomDormantInCol(is, col)
-
-      if(is.isBIBD) {
-        //System.out.print(CLEAR_SCREEN)
-        System.out.println("Generations: " + generations)
-        System.out.println("Iterations: " + iterations)
-        System.out.println(s"An incidence matrix for (${is.v}, ${is.k}, ${is.lambda}) found!")
-        System.out.print(is)
+      if (is.isBIBD) {
+        log("Generations: " + generations)
+        log("Iterations: " + iterations)
+        log(s"An incidence matrix for (${is.v}, ${is.k}, ${is.lambda}) found!")
+        log(is.toString)
 
         return this.is; // Sparta
       }
 
-      this.iterations += 1
-
-      cfa = changeFactor(activeRow)(col)
-      cfd = changeFactor(dormantRow)(col)
-      rcf = rnd.nextInt(max(1,maxChangeFactor).intValue())
-
-      doWeChange = (rcf < cfa && rcf < cfd) || stale
-
-      if (doWeChange) {
-        is.flip(activeRow, col)
-        is.flip(dormantRow, col)
-        calculateChangeFactors
-        unchanged = 0
-        generations += 1
-        if(!stale) lastNonStaleChange.when = System.currentTimeMillis()
-        lastChange = System.currentTimeMillis()
-      }
-      else {
-        unchanged += 1
-      }
+      col = (col + 1) % is.b
+      mutate(col)
+      //col = rnd.nextInt(is.b)
     }
 
     // Never reached
     throw new RuntimeException("This part of the code should be unreachable")
+  }
+
+  def mutate(checkForStaleness: Boolean): Unit = {
+    for(col <- 0 until is.b) mutate(col, checkForStaleness)
+  }
+
+  def mutate(col: Int, checkForStaleness: Boolean = true): Unit = {
+    val activeRow = randomActiveInCol(is, col)
+    val dormantRow = randomDormantInCol(is, col)
+
+    this.iterations += 1
+
+    val cfa = changeFactor(activeRow)(col)
+    val cfd = changeFactor(dormantRow)(col)
+    val rcf = rnd.nextInt(max(1, maxChangeFactor).intValue())
+
+    val doWeChange = (rcf < cfa && rcf < cfd) || checkForStaleness && stale
+
+    if (doWeChange) {
+      is.flip(activeRow, col)
+      is.flip(dormantRow, col)
+      calculateChangeFactors
+      unchanged = 0
+      generations += 1
+      if (!stale) lastChange.timestamp = now
+    }
+    else {
+      unchanged += 1
+    }
   }
 
   def calculateChangeFactors: Unit = {
@@ -147,9 +147,11 @@ case class MutationCABIBD(vertices: Integer, blocksPerVertex: Integer, lambda: I
     return row
   }
 
-  private def stale: Boolean = {
+  def stale: Boolean = {
     assert(staleCellsCount <= is.v * is.b)
     unchanged > unchangedTreshold.value() &&
       staleCellsCount > stalenessTreshold.value()
   }
+
+  private def log(str: String) = if(logMe) println(this.getClass.getSimpleName + ":" + str)
 }

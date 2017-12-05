@@ -4,6 +4,8 @@ import scala.util.Random
 
 package object bibd {
 
+  def now = System.currentTimeMillis()
+
   def forIndex(from: Int, to: Int)(fn: Int => Unit) = {
     var index = from
     while(index < to) {
