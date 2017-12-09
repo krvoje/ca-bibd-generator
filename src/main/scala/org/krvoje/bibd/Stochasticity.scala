@@ -23,10 +23,9 @@ case class Stochasticity(min: Int,
       if(rate <= min) up = true
       if(up) rate += increment()
       else rate -= increment()
-
-      rate = Seq(rate, max).min
-      rate = Seq(rate, min).max
     }
-    rate
+    if(rate > max) max
+    else if(rate < min) min
+    else rate
   }
 }
