@@ -11,7 +11,7 @@ object Program extends App {
   val blocksPerVertex = Integer.parseInt(args(1))
   val lambda = Integer.parseInt(args(2))
 
-  implicit val lastChange = LastChange(now)
+  implicit val lastChange = ReferenceFrame(now)
 
   val randomCABIBD = new MutationCABIBD(vertices, blocksPerVertex, lambda)
   randomCABIBD.findBIBD

@@ -9,6 +9,7 @@ trait IncidenceStructure {
   val lambda: Int
 
   def heuristicDistance: Int
+  val maxHeuristicDistance = b * (v - k) + (v * v - v) * (r - lambda)
 
   def isBIBD: Boolean
 

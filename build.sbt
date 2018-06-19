@@ -5,7 +5,13 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
 mainClass in assembly := Some("org.krvoje.bibd.RandomCABIBD")
 
+licenses += "MIT License" -> url("https://opensource.org/licenses/MIT")
+
 assemblyMergeStrategy in assembly := {
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard
   case _ => MergeStrategy.first
 }
+
+//fork in Test := true
+//parallelExecution in Test := true
+//testOptions in Test += Tests.Argument("-P")

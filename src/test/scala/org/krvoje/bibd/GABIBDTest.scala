@@ -4,7 +4,7 @@ import org.scalatest.FeatureSpec
 
 class GABIBDTest extends FeatureSpec {
 
-    implicit val lastChange = LastChange(now)
+    //implicit val lastChange = ReferenceFrame(now)
 
     feature("Steiner triplets") {
         ga(7, 3, 1)

@@ -1,7 +1,5 @@
 package org.krvoje
 
-import scala.util.Random
-
 package object bibd {
 
   def now = System.currentTimeMillis()
@@ -19,4 +17,7 @@ package object bibd {
 
   implicit def anyOpt[T](e: T): Option[T] = Some(e)
   implicit def anyMethod[T](e: T): () => T = () => e
+  implicit def anySto(e: Int)(implicit lastChange: ReferenceFrame): Stochasticity = Stochasticity(e, e+1)
+  implicit def anyStoOpt(e: Int)(implicit lastChange: ReferenceFrame): Option[Stochasticity] = Stochasticity(e, e+1)
+  implicit def sto2bigint(sto: Stochasticity): BigInt = sto.value()
 }

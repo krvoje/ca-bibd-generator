@@ -1,10 +1,10 @@
 package org.krvoje.bibd
 
-import org.scalatest.FeatureSpec
+import org.scalatest.{FeatureSpec, ParallelTestExecution}
 
 class MutationBIBDTest extends FeatureSpec {
 
-    implicit val lastChange = LastChange(now)
+    //implicit val lastChange = ReferenceFrame(now)
 
     feature("Steiner triplets") {
         mutation(7, 3, 1)

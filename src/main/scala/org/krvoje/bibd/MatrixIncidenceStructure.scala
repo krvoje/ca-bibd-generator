@@ -14,7 +14,6 @@ case class MatrixIncidenceStructure(val v: Int, val k: Int, val lambda: Int, val
   private var _sumTotal = 0
   private val _sumIdeal = v*r
   private var _heuristicDistance = 0
-  val maxHeuristicDistance = b * (v - k) + (v * v - v) * (r - lambda)
 
   updateCache()
   if(randomizeMe) randomize

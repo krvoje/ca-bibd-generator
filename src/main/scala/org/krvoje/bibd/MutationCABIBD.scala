@@ -2,29 +2,45 @@ package org.krvoje.bibd
 
 import scala.util.Random
 
-case class MutationCABIBD(vertices: Integer, blocksPerVertex: Integer, lambda: Integer, logMe: Boolean = true)(implicit val lastChange: LastChange) {
+case class MutationCABIBD(
+  vertices: Integer,
+  blocksPerVertex: Integer,
+  lambda: Integer,
+  logMe: Boolean = true
+)(implicit val referenceFrame: ReferenceFrame = ReferenceFrame(now)) {
 
-  val rnd = Random
+  val is = MatrixIncidenceStructure(vertices, blocksPerVertex, lambda)
 
+  val maxPossibleChangeFactor: BigInt = (is.v-1) * is.r - lambda + (is.b-is.k) + (is.v-is.r)
   var maxChangeFactor: BigInt = 0
   var minChangeFactor: BigInt = 0
   var staleCellsCount: BigInt = 0
-  var generations: BigInt = 0
-  var iterations: BigInt = 0
-  var unchanged: BigInt = 0
 
-  val is = MatrixIncidenceStructure(vertices, blocksPerVertex, lambda)
+  var generations: BigInt = 0
   val changeFactor = Array.ofDim[Int](is.v, is.b)
 
   log("")
   log(s"(v=${is.v}, k=${is.k}, λ=$lambda, b=${is.b}, r=${is.r})")
 
 
-  val inc = Stochasticity(1, 500)
-  val blocksInc = Stochasticity(1, is.b, 1)
-  val blocksSto = Stochasticity(1, is.v * is.b, increment = blocksInc.copy().value)
-  val unchangedTreshold = Stochasticity(1, is.v * is.b * is.r * is.k * is.lambda, increment = blocksInc.copy().value, stochasticity = blocksSto.copy())
-  val stalenessTreshold = Stochasticity(1, is.v * is.b, increment = blocksInc.copy().value, stochasticity = inc.copy())
+  /** How long we wait between two changes (iterations) */
+  val changeInterval = Stochasticity(
+    min = 1
+    , max = is.v * is.b * is.r * is.k * is.lambda
+  )
+
+  /** How much of iterations unchanged means a matrix is stale */
+  val unchangedTreshold = Stochasticity(
+    min = 1
+    , max = is.v * is.b * is.r * is.k * is.lambda
+    , changeInterval = changeInterval.copy()
+  )
+
+  val stalenessTreshold = Stochasticity(
+    min = 1
+    , max = is.v * is.b
+    , changeInterval = changeInterval.copy()
+  )
 
   // If this never halts, the program does not halt
   def findBIBD: IncidenceStructure = {
@@ -34,8 +50,8 @@ case class MutationCABIBD(vertices: Integer, blocksPerVertex: Integer, lambda: I
     while(true)
     {
       if (is.isBIBD) {
-        log("Generations: " + generations)
-        log("Iterations: " + iterations)
+        log("Generations: " + referenceFrame.generation)
+        log("Iterations: " + referenceFrame.currentIteration)
         log(s"An incidence matrix for (${is.v}, ${is.k}, ${is.lambda}) found!")
         log(is.toString)
 
@@ -44,7 +60,6 @@ case class MutationCABIBD(vertices: Integer, blocksPerVertex: Integer, lambda: I
 
       col = (col + 1) % is.b
       mutate(col)
-      //col = rnd.nextInt(is.b)
     }
 
     // Never reached
@@ -56,14 +71,13 @@ case class MutationCABIBD(vertices: Integer, blocksPerVertex: Integer, lambda: I
   }
 
   def mutate(col: Int, checkForStaleness: Boolean = true): Unit = {
+    calculateChangeFactors
     val activeRow = randomActiveInCol(is, col)
     val dormantRow = randomDormantInCol(is, col)
 
-    this.iterations += 1
-
     val cfa = changeFactor(activeRow)(col)
     val cfd = changeFactor(dormantRow)(col)
-    val rcf = rnd.nextInt(max(1, maxChangeFactor).intValue())
+    val rcf = Random.nextInt(max(1, maxChangeFactor).intValue())
 
     val doWeChange = (rcf < cfa && rcf < cfd) || checkForStaleness && stale
 
@@ -71,13 +85,9 @@ case class MutationCABIBD(vertices: Integer, blocksPerVertex: Integer, lambda: I
       is.flip(activeRow, col)
       is.flip(dormantRow, col)
       calculateChangeFactors
-      unchanged = 0
-      generations += 1
-      if (!stale) lastChange.timestamp = now
+      referenceFrame.changed
     }
-    else {
-      unchanged += 1
-    }
+    referenceFrame.iterate
   }
 
   def calculateChangeFactors: Unit = {
@@ -134,23 +144,25 @@ case class MutationCABIBD(vertices: Integer, blocksPerVertex: Integer, lambda: I
   }
 
   def randomActiveInCol(is: IncidenceStructure, col: Int): Int = {
-    var row = rnd.nextInt(is.v)
-    while(!is.active(row, col))
-      row = rnd.nextInt(is.v)
-    return row
+    var row = Random.nextInt(is.v)
+    while(!is.active(row, col)) {
+      row = Random.nextInt(is.v)
+    }
+    row
   }
 
   def randomDormantInCol(is: IncidenceStructure, col: Int): Int = {
-    var row = rnd.nextInt(is.v)
-    while(!is.dormant(row, col))
-      row = rnd.nextInt(is.v)
-    return row
+    var row = Random.nextInt(is.v)
+    while(!is.dormant(row, col)){
+      row = Random.nextInt(is.v)
+    }
+    row
   }
 
   def stale: Boolean = {
     assert(staleCellsCount <= is.v * is.b)
-    unchanged > unchangedTreshold.value() &&
-      staleCellsCount > stalenessTreshold.value()
+    referenceFrame.unchanged >= unchangedTreshold &&
+      staleCellsCount > stalenessTreshold
   }
 
   private def log(str: String) = if(logMe) println(this.getClass.getSimpleName + ":" + str)

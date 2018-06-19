@@ -3,17 +3,23 @@ package org.krvoje.bibd
 import scala.collection.mutable.ListBuffer
 import scala.util.Random
 
-case class GACABIBD(vertices: Int, blocksPerVertex: Int, lambda: Int, logMe: Boolean = true)(implicit val lastChange: LastChange) {
+case class GACABIBD(vertices: Int,
+  blocksPerVertex: Int,
+  lambda: Int,
+  logMe: Boolean = true)(implicit val lastChange: ReferenceFrame = ReferenceFrame(now)) {
 
   var generations = 0
 
-  val population = ListBuffer.empty[MutationCABIBD]
+  var population = ListBuffer.empty[MutationCABIBD]
 
-  population += MutationCABIBD(vertices, blocksPerVertex, lambda, false)(LastChange(now))
+  val rf = ReferenceFrame(now)
+  for(i <- 0 until 10)
+    population += MutationCABIBD(vertices = vertices,
+      blocksPerVertex = blocksPerVertex,
+      lambda = lambda,
+      logMe = false)(ReferenceFrame(now))
+
   val proto = population(0)
-
-  val populationSizeSto = Stochasticity(min = 1, max = proto.is.v * proto.is.b * proto.is.r * proto.is.k * proto.is.lambda, increment = 1)
-  val heuristicSto = Stochasticity(min = population(0).is.b, max = population(0).is.maxHeuristicDistance, increment = 1)
 
   log("")
   log(s"(v=${population(0).is.v}, k=${population(0).is.k}, λ=$lambda, b=${population(0).is.b}, r=${population(0).is.r})")
@@ -21,26 +27,35 @@ case class GACABIBD(vertices: Int, blocksPerVertex: Int, lambda: Int, logMe: Boo
   def findBIBD: IncidenceStructure = {
     while (true) {
       //assert(population.size == maxPopulationSize)
-      for (mut <- population) {
-        if (checkBIBD(mut.is)) return mut.findBIBD
-        if (Random.nextInt(mut.is.maxHeuristicDistance) < heuristicSto.value()) {
-          lastChange.timestamp = now
-          population -= mut
-          if(population.size < populationSizeSto.value()) population += MutationCABIBD(vertices, blocksPerVertex, lambda, false)(LastChange(now))
-        } else {
-          mut.mutate(checkForStaleness = false)
-        }
+      population.foreach {mutant =>
+        if (checkBIBD(mutant.is)) return mutant.findBIBD
+        mutant.mutate(checkForStaleness = true)
       }
 
-      generations += 1
+      population = population.map {
+        mutant =>
+          if(mutant.stale) {//} && mutant.is.heuristicDistance.abs > Random.nextInt(mutant.is.maxHeuristicDistance.abs)) {
+            MutationCABIBD(vertices, blocksPerVertex, lambda, false)(ReferenceFrame(now))
+          } else {
+            mutant
+          }
+      }
+
     }
     throw new RuntimeException("This part of the code should be unreachable")
+  }
+
+  def kill(mutant: MutationCABIBD) = {
+    population -= mutant
+  }
+  def birth(ancestors: Seq[MutationCABIBD]) = {
+    population += MutationCABIBD(vertices, blocksPerVertex, lambda, false)(ReferenceFrame(now))
   }
 
   private def checkBIBD(is: IncidenceStructure): Boolean = {
     if(is.isBIBD) {
       //System.out.print(CLEAR_SCREEN)
-      log("Generations: " + generations)
+      log(s"Generations: $generations. Population: ${population.size}")
       log(s"An incidence matrix for (${is.v}, ${is.k}, ${is.lambda}) found!")
       log(is.toString)
 
