@@ -1,6 +1,6 @@
 package org.krvoje.bibd
 
-import org.scalatest.{FeatureSpec, ParallelTestExecution}
+import org.scalatest.FeatureSpec
 
 class MutationBIBDTest extends FeatureSpec {
 

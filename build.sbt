@@ -12,6 +12,8 @@ assemblyMergeStrategy in assembly := {
   case _ => MergeStrategy.first
 }
 
+test in assembly := {}
+
 //fork in Test := true
 //parallelExecution in Test := true
 //testOptions in Test += Tests.Argument("-P")
