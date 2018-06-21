@@ -16,7 +16,7 @@ case class Stochasticity(
   private var up = true
 
   def value: () => BigInt = {
-    if(Random.nextBoolean() || referenceFrame.iterationsSinceLastChange > changeInterval.map(_.value()).getOrElse(DefaultSto)) {
+    if(referenceFrame.iterationsSinceLastChange > changeInterval.map(_.value()).getOrElse(DefaultSto)) {
       up = Random.nextBoolean()
       if(rate >= max) up = false
       if(rate <= min) up = true

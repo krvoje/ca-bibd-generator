@@ -2,7 +2,7 @@ package org.krvoje.bibd
 
 import org.scalatest.{FeatureSpec, ParallelTestExecution}
 
-class MutationBIBDTest extends FeatureSpec {
+class MutationBIBDTest extends FeatureSpec with ParallelTestExecution {
 
     //implicit val lastChange = ReferenceFrame(now)
 

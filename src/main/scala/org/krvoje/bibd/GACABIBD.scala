@@ -34,7 +34,7 @@ case class GACABIBD(vertices: Int,
 
       population = population.map {
         mutant =>
-          if(mutant.stale) {//} && mutant.is.heuristicDistance.abs > Random.nextInt(mutant.is.maxHeuristicDistance.abs)) {
+          if(mutant.stale) {
             MutationCABIBD(vertices, blocksPerVertex, lambda, false)(ReferenceFrame(now))
           } else {
             mutant
