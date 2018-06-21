@@ -1,7 +1,6 @@
 package org.krvoje.bibd
 
 import scala.collection.mutable.ListBuffer
-import scala.util.Random
 
 case class GACABIBD(vertices: Int,
   blocksPerVertex: Int,
