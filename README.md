@@ -2,21 +2,23 @@
 
 An implementation of an [evolutionary algorithm](https://en.wikipedia.org/wiki/Evolutionary_algorithm) that tries to generate a [Balanced Incomplete Block Design](http://mathworld.wolfram.com/BlockDesign.html) [incidence matrix](https://en.wikipedia.org/wiki/Incidence_matrix). Currently works nice for small matrices :)
 
-Requires JDK 1.6 to build. To build do:
+To build do:
    
     sbt: assembly
 
 To se a couple of examples on generation:
 
-    java -jar ./target/bibd_ca.jar 7 3 1
-    java -jar ./target/bibd_ca.jar 7 4 2
-    java -jar ./target/bibd_ca.jar 9 3 1
-    java -jar ./target/bibd_ca.jar 13 3 1
-    java -jar ./target/bibd_ca.jar 15 3 1
-    java -jar ./target/bibd_ca.jar 19 3 1
-    java -jar ./target/bibd_ca.jar 21 3 1
+    sbt "runMain org.krvoje.bibd.Program 7 3 1"
+    sbt "runMain org.krvoje.bibd.Program 7 4 2"
+    sbt "runMain org.krvoje.bibd.Program 9 3 1"
+    sbt "runMain org.krvoje.bibd.Program 13 3 1"
+    sbt "runMain org.krvoje.bibd.Program 15 3 1"
+    sbt "runMain org.krvoje.bibd.Program 19 3 1"
+    sbt "runMain org.krvoje.bibd.Program 21 3 1"
+    
+Depending on my current fiddling with the algorithm, the larger cases may or may not work.
 
-The project also hosts an older version of the algorithm written in Fortran (builds with gfortran 4.7.2.)
+The project also hosts an older version of the algorithm written in Fortran (builds with gfortran 4.7.2.), but this is outdated.
 
 ## So what's this, and what does it do?
 

@@ -3,7 +3,7 @@ version := "1.0"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"
 
-mainClass in assembly := Some("org.krvoje.bibd.RandomCABIBD")
+mainClass in assembly := Some("org.krvoje.bibd.Program")
 
 licenses += "MIT License" -> url("https://opensource.org/licenses/MIT")
 
@@ -13,7 +13,3 @@ assemblyMergeStrategy in assembly := {
 }
 
 test in assembly := {}
-
-//fork in Test := true
-//parallelExecution in Test := true
-//testOptions in Test += Tests.Argument("-P")

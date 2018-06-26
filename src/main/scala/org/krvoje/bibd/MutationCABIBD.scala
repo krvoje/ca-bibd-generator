@@ -7,7 +7,7 @@ case class MutationCABIBD(
   blocksPerVertex: Integer,
   lambda: Integer,
   logMe: Boolean = true
-)(implicit val referenceFrame: ReferenceFrame = ReferenceFrame(now)) {
+)(implicit val rf: ReferenceFrame = ReferenceFrame(now)) {
 
   val is = MatrixIncidenceStructure(vertices, blocksPerVertex, lambda)
 
@@ -26,18 +26,20 @@ case class MutationCABIBD(
   /** How long we wait between two changes (iterations) */
   val changeInterval = Stochasticity(
     min = 1
-    , max = is.v * is.b * is.r * is.k * is.lambda
+    , max = is.v * is.b //* is.r * is.k * is.lambda
+    , changeInterval = is.b
   )
 
   /** How much of iterations unchanged means a matrix is stale */
   val unchangedTreshold = Stochasticity(
-    min = 1
-    , max = is.v * is.b * is.r * is.k * is.lambda
+    min = is.b
+    , max = is.v * is.b * is.v//is.r * is.k * is.lambda
     , changeInterval = changeInterval.copy()
   )
 
+  /** How many stale cells means that a matrix is stale (stale means that they are unable to change)*/
   val stalenessTreshold = Stochasticity(
-    min = 1
+    min = is.b
     , max = is.v * is.b
     , changeInterval = changeInterval.copy()
   )
@@ -50,8 +52,9 @@ case class MutationCABIBD(
     while(true)
     {
       if (is.isBIBD) {
-        log("Generations: " + referenceFrame.generation)
-        log("Iterations: " + referenceFrame.currentIteration)
+        log("Generations: " + rf.generation)
+        log("Iterations: " + rf.currentIteration)
+        log("Stale resets: " + rf.staleResets)
         log(s"An incidence matrix for (${is.v}, ${is.k}, ${is.lambda}) found!")
         log(is.toString)
 
@@ -79,15 +82,17 @@ case class MutationCABIBD(
     val cfd = changeFactor(dormantRow)(col)
     val rcf = Random.nextInt(max(1, maxChangeFactor).intValue())
 
-    val doWeChange = (rcf < cfa && rcf < cfd) || checkForStaleness && stale
+    val ripeForChange = (rcf < cfa && rcf < cfd)
+    val isStale = checkForStaleness && stale
+    val doWeChange = ripeForChange || isStale
 
     if (doWeChange) {
       is.flip(activeRow, col)
       is.flip(dormantRow, col)
       calculateChangeFactors
-      referenceFrame.changed
+      rf.changed(!ripeForChange && isStale)
     }
-    referenceFrame.iterate
+    rf.iterate
   }
 
   def calculateChangeFactors: Unit = {
@@ -160,9 +165,7 @@ case class MutationCABIBD(
   }
 
   def stale: Boolean = {
-    assert(staleCellsCount <= is.v * is.b)
-    referenceFrame.unchanged >= unchangedTreshold &&
-      staleCellsCount > stalenessTreshold
+    rf.unchanged >= unchangedTreshold && staleCellsCount > stalenessTreshold
   }
 
   private def log(str: String) = if(logMe) println(this.getClass.getSimpleName + ":" + str)

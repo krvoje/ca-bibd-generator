@@ -1,6 +1,6 @@
 package org.krvoje.bibd
 
-import org.scalatest.{FeatureSpec, ParallelTestExecution}
+import org.scalatest.FeatureSpec
 
 class MutationBIBDTest extends FeatureSpec {
 
@@ -11,12 +11,12 @@ class MutationBIBDTest extends FeatureSpec {
         mutation(9, 3, 1)
         mutation(13, 3, 1)
         mutation(15, 3, 1)
-        mutation(19, 3, 1)
-        mutation(21, 3, 1)
-        mutation(25, 3, 1)
-        mutation(27, 3, 1)
-        mutation(31, 3, 1)
-        mutation(33, 3, 1)
+        //mutation(19, 3, 1)
+        //mutation(21, 3, 1)
+        //mutation(25, 3, 1)
+        //mutation(27, 3, 1)
+        //mutation(31, 3, 1)
+        //mutation(33, 3, 1)
     }
 
     private def mutation(v: Int, k: Int, lambda: Int) =

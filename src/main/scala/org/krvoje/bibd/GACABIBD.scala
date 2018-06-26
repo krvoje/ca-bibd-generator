@@ -11,35 +11,34 @@ case class GACABIBD(vertices: Int,
 
   var population = ListBuffer.empty[MutationCABIBD]
 
+  val proto = MutationCABIBD(vertices = vertices,
+    blocksPerVertex = blocksPerVertex,
+    lambda = lambda,
+    logMe = false)
+
+  val MAX_POP_SIZE = proto.is.v
+
   val rf = ReferenceFrame(now)
-  for(i <- 0 until 10)
+  for(i <- 0 until MAX_POP_SIZE)
     population += MutationCABIBD(vertices = vertices,
       blocksPerVertex = blocksPerVertex,
       lambda = lambda,
       logMe = false)(ReferenceFrame(now))
 
-  val proto = population(0)
-
   log("")
   log(s"(v=${population(0).is.v}, k=${population(0).is.k}, λ=$lambda, b=${population(0).is.b}, r=${population(0).is.r})")
 
   def findBIBD: IncidenceStructure = {
-    while (true) {
+    var found: Option[IncidenceStructure] = None
+    while (found.isEmpty) {
       //assert(population.size == maxPopulationSize)
       population.foreach {mutant =>
-        if (checkBIBD(mutant.is)) return mutant.findBIBD
+        if (checkBIBD(mutant.is)) {
+          found = mutant.findBIBD
+        }
         mutant.mutate(checkForStaleness = true)
       }
-
-      population = population.map {
-        mutant =>
-          if(mutant.stale) {
-            MutationCABIBD(vertices, blocksPerVertex, lambda, false)(ReferenceFrame(now))
-          } else {
-            mutant
-          }
-      }
-
+      if(found.nonEmpty) return found.get
     }
     throw new RuntimeException("This part of the code should be unreachable")
   }
