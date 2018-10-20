@@ -9,7 +9,7 @@ case class MutationCABIBD(
   logMe: Boolean = true
 )(implicit val rf: ReferenceFrame = ReferenceFrame(now)) {
 
-  val is = MatrixIncidenceStructure(vertices, blocksPerVertex, lambda)
+  val is = IncidenceStructure(vertices, blocksPerVertex, lambda)
 
   val maxPossibleChangeFactor: BigInt = (is.v-1) * is.r - lambda + (is.b-is.k) + (is.v-is.r)
   var maxChangeFactor: BigInt = 0
