@@ -15,7 +15,7 @@ package object bibd {
   def min(left: BigInt, right: BigInt): BigInt = if(left < right) left else right
   def max(left: BigInt, right: BigInt): BigInt = if(left > right) left else right
 
-  implicit def anyOpt[T](e: T): Option[T] = Some(e)
+  implicit def anyOpt[A, B](a: A)(implicit f: A => B): Option[B] = Some(f(a))
   implicit def anyMethod[T](e: T): () => T = () => e
   implicit def sto2bigint(sto: Stochasticity): BigInt = sto.value()
 

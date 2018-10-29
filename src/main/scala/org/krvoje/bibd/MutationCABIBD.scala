@@ -23,25 +23,18 @@ case class MutationCABIBD(
   log(s"(v=${is.v}, k=${is.k}, λ=$lambda, b=${is.b}, r=${is.r})")
 
 
-  /** How long we wait between two changes (iterations) */
-  val changeInterval = Stochasticity(
-    min = 1
-    , max = is.v * is.b //* is.r * is.k * is.lambda
-    , changeInterval = is.b
-  )
-
   /** How much of iterations unchanged means a matrix is stale */
-  val unchangedTreshold = Stochasticity(
+  val unchangedTreshold = new Stochasticity(
     min = is.b
-    , max = is.v * is.b * is.v//is.r * is.k * is.lambda
-    , changeInterval = changeInterval.copy()
+    , max = is.v * is.b * is.r * is.k * is.lambda
+    , changeTreshold = is.b
   )
 
   /** How many stale cells means that a matrix is stale (stale means that they are unable to change)*/
-  val stalenessTreshold = Stochasticity(
-    min = is.b
+  val stalenessTreshold = new Stochasticity(
+    min = is.v * is.b / 2
     , max = is.v * is.b
-    , changeInterval = changeInterval.copy()
+    , changeTreshold = is.b
   )
 
   // If this never halts, the program does not halt

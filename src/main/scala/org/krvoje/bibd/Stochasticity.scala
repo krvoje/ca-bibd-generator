@@ -4,9 +4,10 @@ import scala.util.Random
 case class Stochasticity(
   min: Int,
   max: Int,
-  changeInterval: Either[Stochasticity, Int],
+  changeTreshold: Option[Stochasticity] = None,
+  increment: Option[Stochasticity] = None,
   initialValue: Option[Int] = None,
-)(implicit referenceFrame: ReferenceFrame) {
+)(implicit rf: ReferenceFrame) {
 
   private var rate = initialValue.getOrElse {
     min + Random.nextInt((max - min).abs + 1)
@@ -14,11 +15,11 @@ case class Stochasticity(
 
   private var up = true
 
-  def value: () => BigInt = {
+  def value: () => Int = {
 
-    val doWeChange = changeInterval match {
-      case Left(stochasticity) => referenceFrame.unchanged > stochasticity.value()
-      case Right(const) => referenceFrame.unchanged > const
+    val doWeChange = {
+      val treshold: Int = changeTreshold
+      rf.unchanged > treshold
     }
 
     if(doWeChange) {
@@ -26,11 +27,23 @@ case class Stochasticity(
       if(rate >= max) up = false
       if(rate <= min) up = true
 
-      rate += (if(up) 1 else -1)
+      if (up) rate += increment
+      else rate -= increment
     }
     rate = math.min(rate, max)
     rate = math.max(rate, min)
 
-    BigInt(rate)
+    rate
   }
+}
+
+object Stochasticity {
+
+  implicit def intToOptSto(int: Int)(implicit rf: ReferenceFrame): Option[Stochasticity] = Some(intToSto(int))
+
+  implicit def intToSto(int: Int)(implicit rf: ReferenceFrame): Stochasticity = new Stochasticity(
+    int, int, None, None, None
+  )(rf)
+
+  implicit def optStoToInt(optSto: Option[Stochasticity]): Int = optSto.map(_.value()).getOrElse(1)
 }

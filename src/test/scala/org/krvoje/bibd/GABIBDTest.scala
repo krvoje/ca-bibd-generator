@@ -8,9 +8,9 @@ class GABIBDTest extends FeatureSpec {
 
     feature("Steiner triplets") {
         ga(7, 3, 1)
-        ga(9, 3, 1)
-        ga(13, 3, 1)
-        ga(15, 3, 1)
+        //ga(9, 3, 1)
+        //ga(13, 3, 1)
+        //ga(15, 3, 1)
         //ga(19, 3, 1)
         //ga(21, 3, 1)
         //ga(25, 3, 1)
