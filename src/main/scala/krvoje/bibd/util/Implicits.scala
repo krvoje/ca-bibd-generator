@@ -1,6 +1,8 @@
-package org.krvoje
+package krvoje.bibd.util
 
-package object bibd {
+import krvoje.bibd.Stochasticity
+
+package object Implicits {
 
   def now = System.currentTimeMillis()
 

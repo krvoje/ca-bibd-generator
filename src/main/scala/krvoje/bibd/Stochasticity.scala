@@ -1,4 +1,7 @@
-package org.krvoje.bibd
+package krvoje.bibd
+
+import krvoje.bibd.util.Implicits._
+
 import scala.util.Random
 
 case class Stochasticity(

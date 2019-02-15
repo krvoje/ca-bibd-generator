@@ -1,4 +1,4 @@
-package org.krvoje.bibd
+package krvoje.bibd
 
 import org.scalatest.FeatureSpec
 

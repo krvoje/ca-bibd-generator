@@ -1,4 +1,6 @@
-package org.krvoje.bibd
+package krvoje.bibd
+
+import krvoje.bibd.util.Implicits._
 
 import scala.collection.mutable.ListBuffer
 

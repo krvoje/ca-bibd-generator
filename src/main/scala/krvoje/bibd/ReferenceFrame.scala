@@ -1,4 +1,4 @@
-package org.krvoje.bibd
+package krvoje.bibd
 
 case class ReferenceFrame(
   var lastChangeTimestamp: Long,
