@@ -8,7 +8,7 @@ case class ReferenceFrame(
   var staleResets: BigInt = 0
 ) {
 
-  def iterate = currentIteration += 1
+  def iterate() = currentIteration += 1
   def changed(staleReset: Boolean) = {
     if(staleReset) staleResets += 1
     lastChangeTimestamp = System.currentTimeMillis()
@@ -16,6 +16,6 @@ case class ReferenceFrame(
     generation += 1
   }
 
-  def unchanged = (currentIteration - lastChangeIteration)
-  def lastChangeHowLongAgo = System.currentTimeMillis() - lastChangeTimestamp
+  def unchanged: BigInt = (currentIteration - lastChangeIteration)
+  def lastChangeHowLongAgo: Long = System.currentTimeMillis() - lastChangeTimestamp
 }

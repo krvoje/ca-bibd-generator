@@ -7,7 +7,7 @@ import scala.util.Random
 case class Stochasticity(
   min: Int,
   max: Int,
-  changeTreshold: Option[Stochasticity] = None,
+  changeThreshold: Option[Stochasticity] = None,
   increment: Option[Stochasticity] = None,
   initialValue: Option[Int] = None,
 )(implicit rf: ReferenceFrame) {
@@ -21,14 +21,14 @@ case class Stochasticity(
   def value: () => Int = {
 
     val doWeChange = {
-      val treshold: Int = changeTreshold
+      val treshold: Int = changeThreshold
       rf.unchanged > treshold
     }
 
     if(doWeChange) {
       up = Random.nextBoolean()
-      if(rate >= max) up = false
-      if(rate <= min) up = true
+      //if(rate >= max) up = false
+      //if(rate <= min) up = true
 
       if (up) rate += increment
       else rate -= increment

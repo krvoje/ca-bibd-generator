@@ -4,7 +4,7 @@ import krvoje.bibd.util.Implicits.forIndex
 
 import scala.util.Random
 
-case class IncidenceStructure(val v: Int, val k: Int, val lambda: Int, val randomizeMe: Boolean = true) {
+class IncidenceStructure(val v: Int, val k: Int, val lambda: Int, val randomizeMe: Boolean = true) {
 
   val (r: Int, b: Int) = computeParams(v, k, lambda)
 
@@ -18,7 +18,7 @@ case class IncidenceStructure(val v: Int, val k: Int, val lambda: Int, val rando
   private var _heuristicDistance = 0
 
   updateCache()
-  if(randomizeMe) randomize
+  if(randomizeMe) randomize()
 
   def rowIntersection(row1: Int, row2: Int): Int = _rowIntersection(row1)(row2)
 
@@ -84,7 +84,7 @@ case class IncidenceStructure(val v: Int, val k: Int, val lambda: Int, val rando
         _colIntersection(col)(otherCol) += increment
       }
     }
-    calculateHeuristicDistance
+    calculateHeuristicDistance()
   }
 
   def heuristicDistance: Int = _heuristicDistance
@@ -147,7 +147,7 @@ case class IncidenceStructure(val v: Int, val k: Int, val lambda: Int, val rando
     }
   }
 
-  def randomize = {
+  def randomize() = {
     forIndex(0, k) { i =>
       forIndex(0, b) { col =>
         var row = Random.nextInt(v)
@@ -168,5 +168,21 @@ case class IncidenceStructure(val v: Int, val k: Int, val lambda: Int, val rando
     }
     sb.append("\n")
     sb.toString()
+  }
+
+  override def equals(that: Any): Boolean = {
+    if (!that.isInstanceOf[IncidenceStructure]) {
+      return false
+    } else {
+      val _that = that.asInstanceOf[IncidenceStructure]
+      forIndex(0, v) { row =>
+        forIndex(0, b) { col =>
+          if (this.active(row, col) != _that.active(row, col)) {
+            return false
+          }
+        }
+      }
+      return true
+    }
   }
 }

@@ -21,6 +21,6 @@ package object Implicits {
   implicit def anyMethod[T](e: T): () => T = () => e
   implicit def sto2bigint(sto: Stochasticity): BigInt = sto.value()
 
-  implicit def leftLift[X,Y](value : X): Either[X,Y] = Left(value)
-  implicit def rightLift[X,Y](value : Y): Either[X,Y] = Right(value)
+  //implicit def leftLift[X,Y](value : X): Either[X,Y] = Left(value)
+  //implicit def rightLift[X,Y](value : Y): Either[X,Y] = Right(value)
 }

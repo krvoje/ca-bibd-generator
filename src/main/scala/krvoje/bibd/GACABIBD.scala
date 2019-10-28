@@ -38,7 +38,7 @@ case class GACABIBD(vertices: Int,
         if (checkBIBD(mutant.is)) {
           found = mutant.findBIBD
         }
-        mutant.mutate(checkForStaleness = true)
+        mutant.mutate(isCheckForStaleness = true)
       }
       if(found.nonEmpty) return found.get
     }
