@@ -9,30 +9,19 @@ case class MutationCABIBD(
   blocksPerVertex: Integer,
   lambda: Integer,
   logMe: Boolean = true
-)(implicit val rf: ReferenceFrame = ReferenceFrame(now)) {
+)(implicit val rf: ReferenceFrame = ReferenceFrame(now())) {
 
   val is = new IncidenceStructure(vertices, blocksPerVertex, lambda)
 
-  val maxPossibleChangeFactor: BigInt = (is.v-1) * is.r - lambda + (is.b-is.k) + (is.v-is.r)
-  var maxChangeFactor: BigInt = 0
-  var minChangeFactor: BigInt = 0
+  val maxPossibleChangeFactor: Int = (is.v-1) * is.r - lambda + (is.b-is.k) + (is.v-is.r)
+  var maxChangeFactor: Int = 0
+  var minChangeFactor: Int = 0
 
-  var generations: BigInt = 0
+  var generations: Int = 0
   val changeFactor: Array[Array[Int]] = Array.ofDim[Int](is.v, is.b)
 
   log("")
   log(s"(v=${is.v}, k=${is.k}, λ=$lambda, b=${is.b}, r=${is.r})")
-
-  val changeThreshold = Stochasticity(
-    1, is.b, math.max(is.v, is.b)
-  )
-
-  /** How much of iterations unchanged means a matrix is stale */
-  val unchangedThreshold = Stochasticity(
-    min = is.b,
-    max = is.v * is.b * is.r * is.k * is.lambda,
-    changeThreshold = changeThreshold.copy(),
-  )
 
   // If this never halts, the program does not halt
   def findBIBD: IncidenceStructure = {
@@ -59,21 +48,21 @@ case class MutationCABIBD(
     throw new RuntimeException("This part of the code should be unreachable")
   }
 
-  def mutate(isCheckForStaleness: Boolean): Unit = {
-    for(col <- 0 until is.b) mutate(col, isCheckForStaleness)
+  def mutate(): Unit = {
+    for(col <- 0 until is.b) mutate(col)
   }
 
-  def mutate(col: Int, isCheckForStaleness: Boolean = true): Unit = {
+  def mutate(col: Int): Unit = {
     calculateChangeFactors()
     val activeRow = randomActiveInCol(is, col)
     val dormantRow = randomDormantInCol(is, col)
 
     val cfa = changeFactor(activeRow)(col)
     val cfd = changeFactor(dormantRow)(col)
-    val rcf = Random.nextInt(max(0, maxChangeFactor).intValue)
+    val rcf = Random.nextInt(max(1, maxChangeFactor+1).intValue)
 
     val ripeForChange = (rcf < cfa && rcf < cfd)
-    val isStale = isCheckForStaleness && isMatrixStale
+    val isStale = isMatrixStale
     val doWeChange = ripeForChange || isStale
 
     if (doWeChange) {
@@ -152,9 +141,7 @@ case class MutationCABIBD(
     row
   }
 
-  def isMatrixStale: Boolean = {
-    rf.unchanged >= unchangedThreshold
-  }
+  def isMatrixStale: Boolean = rf.unchanged > is.v * is.b * is.r * is.k * is.lambda
 
   private def log(str: String): String = if(logMe) {
     val msg: String = this.getClass.getSimpleName + ":" + str

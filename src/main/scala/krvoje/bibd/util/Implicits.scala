@@ -1,12 +1,12 @@
 package krvoje.bibd.util
 
-import krvoje.bibd.Stochasticity
+import scala.language.implicitConversions
 
 package object Implicits {
 
-  def now = System.currentTimeMillis()
+  def now(): Long = System.currentTimeMillis()
 
-  def forIndex(from: Int, to: Int)(fn: Int => Unit) = {
+  def forIndex(from: Int, to: Int)(fn: Int => Unit): Unit = {
     var index = from
     while(index < to) {
       fn(index)
@@ -14,12 +14,11 @@ package object Implicits {
     }
   }
 
-  def min(left: BigInt, right: BigInt): BigInt = if(left < right) left else right
-  def max(left: BigInt, right: BigInt): BigInt = if(left > right) left else right
+  def min(left: Int, right: Int): Int = if(left < right) left else right
+  def max(left: Int, right: Int): Int = if(left > right) left else right
 
   implicit def anyOpt[A, B](a: A)(implicit f: A => B): Option[B] = Some(f(a))
   implicit def anyMethod[T](e: T): () => T = () => e
-  implicit def sto2bigint(sto: Stochasticity): BigInt = sto.value()
 
   //implicit def leftLift[X,Y](value : X): Either[X,Y] = Left(value)
   //implicit def rightLift[X,Y](value : Y): Either[X,Y] = Right(value)

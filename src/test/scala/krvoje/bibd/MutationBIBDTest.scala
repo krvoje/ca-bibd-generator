@@ -4,8 +4,6 @@ import org.scalatest.FeatureSpec
 
 class MutationBIBDTest extends FeatureSpec {
 
-    //implicit val lastChange = ReferenceFrame(now)
-
     feature("Steiner triplets") {
         mutation(7, 3, 1)
         mutation(9, 3, 1)
