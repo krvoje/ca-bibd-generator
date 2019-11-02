@@ -19,7 +19,7 @@ package object Implicits {
 
   implicit def anyOpt[A, B](a: A)(implicit f: A => B): Option[B] = Some(f(a))
   implicit def anyMethod[T](e: T): () => T = () => e
-
+  implicit def doubleToInt(number: Double): Int = number.intValue()
   //implicit def leftLift[X,Y](value : X): Either[X,Y] = Left(value)
   //implicit def rightLift[X,Y](value : Y): Either[X,Y] = Right(value)
 }

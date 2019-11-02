@@ -3,20 +3,34 @@ package krvoje.bibd
 import org.scalatest.FeatureSpec
 
 class MutationBIBDTest extends FeatureSpec {
+  feature("Steiner triplets") {
+    steiner(7)
+    steiner(9)
+    steiner(13)
+    steiner(15)
+    steiner(19)
+  }
+  feature("Hadamard plane") {
+    hadamard(1)
+    hadamard(2)
+    hadamard(3)
+  }
+  feature("Affine Plane") {
+    affine(2)
+    affine(3)
+    affine(4)
+  }
+  feature("Projective plane") {
+    projective(1)
+    projective(2)
+    projective(3)
+  }
 
-    feature("Steiner triplets") {
-        mutation(7, 3, 1)
-        mutation(9, 3, 1)
-        mutation(13, 3, 1)
-        mutation(15, 3, 1)
-        mutation(19, 3, 1)
-        mutation(21, 3, 1)
-        mutation(25, 3, 1)
-        mutation(27, 3, 1)
-        mutation(31, 3, 1)
-        mutation(33, 3, 1)
-    }
+  private def affine(n: Int): Unit = mutation("Affine plane")(n * n, n, 1)
+  private def hadamard(n: Int): Unit = mutation("Hadamard design")(4*n+3, 2*n+1, n)
+  private def projective(n: Int): Unit = mutation("Projective plane")(n*n + n + 1, n + 1, 1)
+  private def steiner(n: Int): Unit = mutation("Steiner triplet")(n, 3, 1)
 
-    private def mutation(v: Int, k: Int, lambda: Int): Unit =
-        scenario(s"(Mutation) Steiner triplet 2-($v, $k, $lambda)") {MutationCABIBD(v,k,lambda).findBIBD}
+  private def mutation(name: String)(v: Int, k: Int, lambda: Int): Unit =
+    scenario(s"(Mutation) $name 2-($v, $k, $lambda)") {MutationCABIBD(v,k,lambda).findBIBD}
 }

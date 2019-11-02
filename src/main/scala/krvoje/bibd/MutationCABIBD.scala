@@ -1,5 +1,6 @@
 package krvoje.bibd
 
+import krvoje.bibd
 import krvoje.bibd.util.Implicits._
 
 import scala.util.Random
@@ -23,6 +24,15 @@ case class MutationCABIBD(
   log("")
   log(s"(v=${is.v}, k=${is.k}, λ=$lambda, b=${is.b}, r=${is.r})")
 
+
+  val blockSto = Stochasticity(1, is.b)
+
+  val unchangedSto = Stochasticity(
+    min = is.v * is.b * 50,
+    max = is.v * is.b * 100,
+    increment = Stochasticity(math.min(is.v, is.b), is.v * is.b),
+  )
+
   // If this never halts, the program does not halt
   def findBIBD: IncidenceStructure = {
     calculateChangeFactors()
@@ -35,6 +45,7 @@ case class MutationCABIBD(
         log("Iterations: " + rf.currentIteration)
         log("Stale resets: " + rf.staleResets)
         log(s"An incidence matrix for (${is.v}, ${is.k}, ${is.lambda}) found!")
+        log(unchangedSto.value().toString)
         log(is.toString)
 
         return this.is; // Sparta
@@ -76,6 +87,7 @@ case class MutationCABIBD(
 
   def calculateChangeFactors(): Unit = {
     maxChangeFactor = 0
+    minChangeFactor = 0
     forIndex(0, is.v) { row =>
       forIndex(0, is.b) { col =>
         changeFactor(row)(col) = calculateChangeFactor(row, col)
@@ -141,7 +153,9 @@ case class MutationCABIBD(
     row
   }
 
-  def isMatrixStale: Boolean = rf.unchanged > is.v * is.b * is.r * is.k * is.lambda
+  def isMatrixStale: Boolean = {
+    rf.unchanged > unchangedSto
+  }
 
   private def log(str: String): String = if(logMe) {
     val msg: String = this.getClass.getSimpleName + ":" + str
