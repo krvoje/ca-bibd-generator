@@ -1,8 +1,8 @@
-package krvoje.bibd.util
+package krvoje.bibd
 
 import scala.language.implicitConversions
 
-package object Implicits {
+object Implicits {
 
   def now(): Long = System.currentTimeMillis()
 

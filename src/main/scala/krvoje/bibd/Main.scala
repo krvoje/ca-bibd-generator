@@ -1,6 +1,6 @@
 package krvoje.bibd
 
-import krvoje.bibd.util.Implicits._
+import Implicits._
 
 object Main {
   def main(args: Array[String]): Unit = {

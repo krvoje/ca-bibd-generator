@@ -1,7 +1,9 @@
 package krvoje.bibd
 
+import java.io.{BufferedWriter, File, FileWriter}
+
 import krvoje.bibd
-import krvoje.bibd.util.Implicits._
+import Implicits._
 
 import scala.util.Random
 
@@ -9,10 +11,12 @@ case class MutationCABIBD(
   vertices: Integer,
   blocksPerVertex: Integer,
   lambda: Integer,
-  logMe: Boolean = true
+  isLogged: Boolean = true,
+  isLoggedInFile: Boolean = false,
 )(implicit val rf: ReferenceFrame = ReferenceFrame(now())) {
 
   val is = new IncidenceStructure(vertices, blocksPerVertex, lambda)
+  val globalSB = new StringBuilder()
 
   val maxPossibleChangeFactor: Int = (is.v-1) * is.r - lambda + (is.b-is.k) + (is.v-is.r)
   var maxChangeFactor: Int = 0
@@ -24,13 +28,11 @@ case class MutationCABIBD(
   log("")
   log(s"(v=${is.v}, k=${is.k}, λ=$lambda, b=${is.b}, r=${is.r})")
 
-
-  val blockSto = Stochasticity(1, is.b)
-
   val unchangedSto = Stochasticity(
-    min = is.v * is.b * 50,
-    max = is.v * is.b * 100,
-    increment = Stochasticity(math.min(is.v, is.b), is.v * is.b),
+    min = is.v * is.b * 2,
+    max = is.v * is.b * 3,
+    increment = Stochasticity(1, is.v * is.b),
+    changeThreshold = Stochasticity(1, is.b),
   )
 
   // If this never halts, the program does not halt
@@ -44,9 +46,11 @@ case class MutationCABIBD(
         log("Generations: " + rf.generation)
         log("Iterations: " + rf.currentIteration)
         log("Stale resets: " + rf.staleResets)
-        log(s"An incidence matrix for (${is.v}, ${is.k}, ${is.lambda}) found!")
+        log(s"An incidence matrix for 2-(${is.v}, ${is.k}, ${is.lambda}) found!")
         log(unchangedSto.value().toString)
         log(is.toString)
+
+        if (isLoggedInFile) writeToFile(s"2-(${is.v}, ${is.k}, ${is.lambda}).tmp")
 
         return this.is; // Sparta
       }
@@ -157,11 +161,19 @@ case class MutationCABIBD(
     rf.unchanged > unchangedSto
   }
 
-  private def log(str: String): String = if(logMe) {
+  private def log(str: String): String = if(isLogged) {
     val msg: String = this.getClass.getSimpleName + ":" + str
     println(msg)
+    globalSB.append(s"$msg\n")
     msg
   } else {
     ""
+  }
+
+  private def writeToFile(filename: String): Unit = {
+    val file = new File(s"target/$filename")
+    val bw = new BufferedWriter(new FileWriter(file))
+    bw.write(globalSB.toString)
+    bw.close()
   }
 }

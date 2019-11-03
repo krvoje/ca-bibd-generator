@@ -1,19 +1,19 @@
 package krvoje.bibd
 
-import org.scalatest.FeatureSpec
+import org.scalatest.{FeatureSpec, ParallelTestExecution}
 
-class MutationBIBDTest extends FeatureSpec {
+class MutationBIBDTest extends FeatureSpec with ParallelTestExecution {
   feature("Steiner triplets") {
     steiner(7)
     steiner(9)
     steiner(13)
     steiner(15)
-    steiner(19)
+    //steiner(19)
   }
   feature("Hadamard plane") {
     hadamard(1)
     hadamard(2)
-    hadamard(3)
+    //hadamard(3)
   }
   feature("Affine Plane") {
     affine(2)

@@ -1,6 +1,6 @@
 package krvoje.bibd
 
-import krvoje.bibd.util.Implicits.forIndex
+import Implicits.forIndex
 
 import scala.util.Random
 

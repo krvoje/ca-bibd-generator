@@ -1,6 +1,6 @@
 package krvoje.bibd
 
-import krvoje.bibd.util.Implicits._
+import Implicits._
 
 import scala.language.implicitConversions
 import scala.util.Random
@@ -12,6 +12,7 @@ case class Stochasticity(
   changeThreshold: Option[Stochasticity] = None,
   initialValue: Option[Int] = None,
   isRandom: Boolean = false,
+  isProbabilistic: Boolean = false,
 )(implicit rf: ReferenceFrame) {
 
   import Stochasticity._
@@ -24,7 +25,7 @@ case class Stochasticity(
 
   def value: () => Int = if (isRandom) {
     randomValue
-  } else {
+  } else{
 
     val isChange: Boolean = rf.unchanged >= changeThreshold
 
@@ -37,7 +38,12 @@ case class Stochasticity(
     rate = math.min(rate, max)
     rate = math.max(rate, min)
 
-    rate
+
+    if (isProbabilistic) {
+      min + Random.nextInt(rate)
+    } else {
+      rate
+    }
   }
 
   private def randomValue = min + Random.nextInt((max - min).abs + 1)
